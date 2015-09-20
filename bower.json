@@ -1,0 +1,21 @@
+{
+  "name": "github-issue-rank",
+  "version": "0.0.0",
+  "homepage": "https://github.com/AndersDJohnson/github-issue-rank",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "base64": "~0.3.0",
+    "github-api": "master",
+    "jquery": "~2.1.4",
+    "lodash": "~3.10.1",
+    "octokat": "~0.4.11",
+    "react": "~0.13.3"
+  }
+}
