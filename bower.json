@@ -11,6 +11,7 @@
     "tests"
   ],
   "dependencies": {
+    "async": "~1.4.2",
     "base64": "~0.3.0",
     "github-api": "master",
     "jquery": "~2.1.4",

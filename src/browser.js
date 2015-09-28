@@ -1,0 +1,2 @@
+
+githubIssueRank.run();

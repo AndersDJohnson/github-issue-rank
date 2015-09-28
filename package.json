@@ -1,0 +1,21 @@
+{
+  "name": "github-issue-rank",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "babel": "^5.8.23",
+    "octokat": "^0.4.12",
+    "react": "^0.13.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node test",
+    "watch": "babel --watch src/ --out-dir dist/"
+  },
+  "author": "",
+  "license": "MIT"
+}

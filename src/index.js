@@ -1,81 +1,283 @@
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define(['octokat', 'react'], function (Octokat, React) {
+            return (root.githubIssueRank = factory(Octokat, React));
+        });
+    } else if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like enviroments that support module.exports,
+        // like Node.
+        module.exports = factory(require('octokat'), require('react'));
+    } else {
+        // Browser globals
+        root.githubIssueRank = factory(Octokat, React);
+    }
+}(this, function (Octokat, React) {
 
-(function () {
+  var out = {};
 
-  var github = new Github({
-    // username: "YOU_USER",
-    // password: "YOUR_PASSWORD",
-    // auth: "basic"
+  var hasVote = out.hasVote = function (str) {
+
+    var lines = str.split('\n');
+
+    var found = false;
+
+    lines.forEach(function (line) {
+      if (found) return;
+      var isQuote = line.match(/^\s*>/);
+      if (isQuote) return;
+      // found = line.match(/(^|[\W\b])(\+1|:\+1:|:thumbsup:|👍)([\W\b]|$)/g);
+      found = found || line.match(/(^|[\W\b])(\+1|:\+1:|:thumbsup:|\uD83D\uDC4D)([\W\b]|$)/g);
+    });
+
+    return found;
+
+    // return !! str.match(/(^|[\b])(\+1|:\+1:|:thumbsup:|👍)([\b]|$)/g);
+    // return !! str.match(/(^|[\W\b])(\+1|:\+1:|:thumbsup:|👍)([\W\b]|$)/g);
+    // return 
+  };
+
+  // return out;
+
+
+
+  var IssueComponent = React.createClass({
+    render: function () {
+      var issue = this.props.issue;
+      var voteCount = this.props.voteCount;
+      return (
+        <div>
+          <a target="_blank"
+            href={issue.htmlUrl}
+          >
+            {issue.number}: {issue.title}
+          </a>
+          &nbsp;
+          (+{voteCount} / {issue.comments})
+        </div>
+      );
+    }
   });
 
 
-  var showIssues = function (repo) {
-    var issues = github.getIssues(repo.owner.login, repo.name);
-    var opts = {};
-    issues.list(opts, function(err, issues) {
-      console.log(err, issues);
-    });
+
+  var octo = new Octokat({
+    // username: "USER_NAME",
+    // password: "PASSWORD"
+    //
+    // token: 'XXXXXXXX'
+  });
+
+
+  var withComments = function (comments) {
+    getVoteCountForComment(comments);
   };
 
 
-  var done = function (repos) {
+  var getVoteCountForComment = function (comments) {
+    // console.log(comments);
 
-    repos = _.sortBy(repos, function (i) {
-      return i.name.toLowerCase();
-    });
+    var voteCount = 0;
 
-    console.log(repos);
+    var alreadyUsers = {};
 
-    var Repo = React.createClass({
-      showIssues: function () {
-        showIssues(this.props.repo);
-      },
-      render: function () {
-        var repo = this.props.repo;
-        return (
-          <div>
-            <a href={repo.html_url}>{repo.name}</a>
-            &nbsp;
-            (<a href="#" onClick={this.showIssues}>issues</a>)
-          </div>
-        );
+    comments.forEach(function (comment) {
+      var body = comment.body;
+
+      var login = comment.user.login;
+
+      // console.log('comment', comment);
+
+      if (alreadyUsers[login]) {
+        return;
+      }
+
+      var thisHasVote = hasVote(body);
+      if (thisHasVote) {
+        // console.log('has vote', thisHasVote, body);
+        // if (comment.issueUrl.match(/\/2$/)) {
+        //   console.log('comment', login, comment.body);
+        // }
+
+        alreadyUsers[login] = true;
+
+        voteCount += 1;
       }
     });
 
-    var reposCmp = [];
-
-    if (repos) {
-      repos.forEach(function (repo) {
-        reposCmp.push(
-          <Repo repo={repo} />
-        );
-      })
-    }
-
-    React.render(
-      <div>{reposCmp}</div>
-      ,
-      document.getElementById('wrap')
-    );
-
+    return voteCount;
   };
 
 
-  var repos = localStorage.getItem('repos');
+  out.run = function () {
+    // getComments(
+    //   //'AndersDJohnson', 'magnificent.js', 32,
+    //   'isaacs', 'github', 9,
+    //   function (err, comments) {
+    //     if (err) throw err;
+    //     withComments(comments);
+    //   }
+    // );
+    // getIssues(
+    //   'AndersDJohnson', 'magnificent.js',
+    //   function (err, issues) {
+    //     console.log(err, issues);
+    //   }
+    // );
+    getIssuesThenComments(
+      'isaacs', 'github', 
+      function (err, issue, comments) {
+        // console.log('eachIssueComment', issue, comments);
+      },
+      function (err, results) {
+        results = _.sortBy(results, function (r) { return r.issue.number; });
+        console.log('results', results);
 
-  if (repos) {
-    repos = JSON.parse(repos);
-    done(repos);
-  }
-  else {
+        results.forEach(function (result) {
+          var voteCount = 0;
+          if (result.comments) {
+            voteCount = getVoteCountForComment(result.comments);
+          }
+          result.voteCount = voteCount;
+        });
 
-    var user = github.getUser();
+        var components = [];
 
-    user.userRepos('AndersDJohnson', function(err, repos) {
-      if (err) throw err;
-      localStorage.setItem('repos', JSON.stringify(repos));
-      done(repos);
-    });
+        results.forEach(function (result) {
+          components.push(
+            <IssueComponent issue={result.issue} voteCount={result.voteCount} />
+          );
+        });
 
-  }
+        React.render(
+          <div>{components}</div>
+          ,
+          document.getElementById('wrap')
+        );
+      }
+    );
+  };
 
-});
+
+  function getIssuesThenComments(owner, repo, eachIssueComments, done) {
+    done = done || function () {};
+    getIssues(
+      owner, repo,
+      function (err, issues) {
+        console.log(err, issues);
+        
+        async.map(issues,
+          function (issue, cb) {
+            if (issue.comments) {   
+              getComments(
+                owner, repo, issue.number,
+                function (err, comments) {
+                  // console.log(err, comments);
+                  eachIssueComments(err, issue, comments);
+                  cb(err, {
+                    issue: issue,
+                    comments: comments
+                  });
+                }
+              );
+            }
+            else {
+              eachIssueComments(null, issue, null);
+              cb(null, {
+                issue: issue
+              });
+            }
+          },
+          function (err, results) {
+            if (err) return done(err);
+            done(err, results);
+          }
+        );
+      }
+    );
+  };
+
+
+  function getData(cacheKey, onOcto, done) {
+    // console.log(cacheKey);
+
+    var cached = localStorage.getItem(cacheKey);
+
+    // console.log(cached);
+
+    if (cached) {
+      done(null, JSON.parse(cached));
+      return;
+    }
+
+    var onnedOcto = onOcto(octo);
+
+    onnedOcto
+      .then(function (data) {
+        // console.log('then', arguments);
+        console.log('has next page', !! data.nextPage);
+
+        var allData = data;
+        var nextPage = data.nextPage;
+
+        async.whilst(function () {
+          return nextPage;
+        }, function (cb) {
+          nextPage().then(function (data) {
+            allData = allData.concat(data);
+            nextPage = data.nextPage;
+            cb();
+          }, function (err) {
+            cb(err);
+          });
+        }, function (err) {
+          if (err) throw err;
+          // console.log('done', arguments);
+          // console.log('allData', allData);
+
+          localStorage.setItem(cacheKey, JSON.stringify(allData));
+
+          done(err, allData);
+        });
+      }, function (err) {
+        console.error(arguments);
+        done(err);
+      });
+  };
+
+
+  function getComments(owner, repo, issue, done) {
+
+    var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
+
+    var onOcto = function (octo) {
+      return octo
+        .repos(owner, repo)
+        .issues(issue)
+        .comments
+        .fetch();
+    };
+
+    getData(cacheKey, onOcto, done);
+  };
+
+
+  function getIssues(owner, repo, done) {
+
+    var cacheKey = 'issues:' + owner + '/' + repo;
+
+    var onOcto = function (octo) {
+      return octo
+        .repos(owner, repo)
+        .issues
+        .fetch();
+    };
+
+    getData(cacheKey, onOcto, done);
+  };
+
+
+  return out;
+
+}));

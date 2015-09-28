@@ -1,6 +1,9 @@
 
 
 bower_components
+dist
+
+*.bak
 
 
 # Logs
