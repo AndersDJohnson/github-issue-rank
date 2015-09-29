@@ -211,39 +211,33 @@
       return;
     }
 
-    var onnedOcto = onOcto(octo);
+    var promiser = function () { return onOcto(octo); };
+    var allData = [];
 
-    onnedOcto
-      .then(function (data) {
-        // console.log('then', arguments);
-        console.log('has next page', !! data.nextPage);
-
-        var allData = data;
-        var nextPage = data.nextPage;
-
-        async.whilst(function () {
-          return nextPage;
-        }, function (cb) {
-          nextPage().then(function (data) {
+    async.doWhilst(
+      function (cb) {
+        promiser().then(
+          function (data) {
             allData = allData.concat(data);
-            nextPage = data.nextPage;
+            promiser = data.nextPage;
             cb();
-          }, function (err) {
+          },
+          function (err) {
             cb(err);
-          });
-        }, function (err) {
-          if (err) throw err;
-          // console.log('done', arguments);
-          // console.log('allData', allData);
+          }
+        );
+      },
+      function () {
+        return promiser;
+      },
+      function (err) {
+        if (err) throw err;
 
-          localStorage.setItem(cacheKey, JSON.stringify(allData));
+        localStorage.setItem(cacheKey, JSON.stringify(allData));
 
-          done(err, allData);
-        });
-      }, function (err) {
-        console.error(arguments);
-        done(err);
-      });
+        done(err, allData);
+      }
+    );
   };
 
 
