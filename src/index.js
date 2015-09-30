@@ -1,17 +1,17 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['octokat', 'react'], function (Octokat, React) {
-            return (root.githubIssueRank = factory(Octokat, React));
+        define(['octokat', 'react', 'fixed-data-table'], function (Octokat, React, FixedDataTable) {
+            return (root.githubIssueRank = factory(Octokat, React, FixedDataTable));
         });
     } else if (typeof module === 'object' && module.exports) {
         // Node. Does not work with strict CommonJS, but
         // only CommonJS-like enviroments that support module.exports,
         // like Node.
-        module.exports = factory(require('octokat'), require('react'));
+        module.exports = factory(require('octokat'), require('react'), require('fixed-data-table'));
     } else {
         // Browser globals
-        root.githubIssueRank = factory(Octokat, React);
+        root.githubIssueRank = factory(Octokat, React, FixedDataTable);
     }
 }(this, function (Octokat, React) {
 
@@ -39,26 +39,6 @@
   };
 
   // return out;
-
-
-
-  var IssueComponent = React.createClass({
-    render: function () {
-      var issue = this.props.issue;
-      var voteCount = this.props.voteCount;
-      return (
-        <div>
-          <a target="_blank"
-            href={issue.htmlUrl}
-          >
-            {issue.number}: {issue.title}
-          </a>
-          &nbsp;
-          (+{voteCount} / {issue.comments})
-        </div>
-      );
-    }
-  });
 
 
 
@@ -131,8 +111,7 @@
         // console.log('eachIssueComment', issue, comments);
       },
       function (err, results) {
-        results = _.sortBy(results, function (r) { return r.issue.number; });
-        console.log('results', results);
+        // results = _.sortBy(results, function (r) { return r.issue.number; });
 
         results.forEach(function (result) {
           var voteCount = 0;
@@ -142,13 +121,101 @@
           result.voteCount = voteCount;
         });
 
+        results = _.sortBy(results, function (result) {
+          return -1 * result.voteCount;
+        });
+
         var components = [];
 
+        var Table = FixedDataTable.Table;
+        var Column = FixedDataTable.Column;
+
+        // Table data as a list of array.
+        var rows = [];
+
         results.forEach(function (result) {
-          components.push(
-            <IssueComponent issue={result.issue} voteCount={result.voteCount} />
-          );
+          var issue = result.issue;
+          var voteCount = result.voteCount;
+
+          var ratio = voteCount / issue.comments;
+
+          rows.push([
+            issue.number,
+            issue.title,
+            issue.htmlUrl,
+            voteCount,
+            issue.comments,
+            ratio
+          ]);
         });
+
+        var rowGetter = function (rowIndex) {
+          return rows[rowIndex];
+        };
+
+        var titleRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
+          return (
+            <a target="_blank"
+              href={rowData[2]}
+            >
+              {rowData[1]}
+            </a>
+          );
+        };
+        var issueNumberRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
+          return (
+            <a target="_blank"
+              href={rowData[2]}
+            >
+              {rowData[0]}
+            </a>
+          );
+        };
+        var ratioRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
+          var ratio = rowData[5];
+          var perc = ratio * 100;
+          var pretty = perc.toFixed(1) + '%';
+          return pretty;
+        };
+
+        components.push(
+          <Table
+            rowHeight={50}
+            rowGetter={rowGetter}
+            rowsCount={rows.length}
+            width={700}
+            height={400}
+            headerHeight={50}>
+            <Column
+              label="Issue #"
+              width={100}
+              dataKey={0}
+              cellRenderer={issueNumberRenderer}
+            />
+            <Column
+              label="Title"
+              width={200}
+              dataKey={1}
+              cellRenderer={titleRenderer}
+            />
+            <Column
+              label="# Votes"
+              width={100}
+              dataKey={3}
+            />
+            <Column
+              label="# Comments"
+              width={100}
+              dataKey={4}
+            />
+            <Column
+              label="Ratio"
+              width={100}
+              dataKey={5}
+              cellRenderer={ratioRenderer}
+            />
+          </Table>
+        );
 
         React.render(
           <div>{components}</div>

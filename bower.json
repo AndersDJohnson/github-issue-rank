@@ -17,6 +17,7 @@
     "jquery": "~2.1.4",
     "lodash": "~3.10.1",
     "octokat": "~0.4.11",
-    "react": "~0.13.3"
+    "react": "~0.13.3",
+    "fixed-data-table": "~0.4.6"
   }
 }
