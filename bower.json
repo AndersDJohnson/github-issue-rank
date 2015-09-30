@@ -18,6 +18,7 @@
     "lodash": "~3.10.1",
     "octokat": "~0.4.11",
     "react": "~0.13.3",
-    "fixed-data-table": "~0.4.6"
+    "fixed-data-table": "~0.4.6",
+    "oauth-js": "~0.4.3"
   }
 }

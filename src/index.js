@@ -1,19 +1,24 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['octokat', 'react', 'fixed-data-table'], function (Octokat, React, FixedDataTable) {
-            return (root.githubIssueRank = factory(Octokat, React, FixedDataTable));
+        define(['octokat', 'react', 'fixed-data-table', 'oauth'], function (Octokat, React, FixedDataTable, OAuth) {
+            return (root.githubIssueRank = factory(Octokat, React, FixedDataTable, OAuth));
         });
     } else if (typeof module === 'object' && module.exports) {
         // Node. Does not work with strict CommonJS, but
         // only CommonJS-like enviroments that support module.exports,
         // like Node.
-        module.exports = factory(require('octokat'), require('react'), require('fixed-data-table'));
+        module.exports = factory(
+          require('octokat'),
+          require('react'),
+          require('fixed-data-table')
+          // TODO: OAuth for Node.js
+        );
     } else {
         // Browser globals
-        root.githubIssueRank = factory(Octokat, React, FixedDataTable);
+        root.githubIssueRank = factory(Octokat, React, FixedDataTable, OAuth);
     }
-}(this, function (Octokat, React) {
+}(this, function (Octokat, React, FixedDataTable, OAuth) {
 
   var out = {};
 
@@ -42,12 +47,10 @@
 
 
 
-  var octo = new Octokat({
-    // username: "USER_NAME",
-    // password: "PASSWORD"
-    //
-    // token: 'XXXXXXXX'
-  });
+  var octo;
+  var githubAccessToken;
+
+
 
 
   var withComments = function (comments) {
@@ -90,7 +93,7 @@
   };
 
 
-  out.run = function () {
+  var postAuth = function () {
     // getComments(
     //   //'AndersDJohnson', 'magnificent.js', 32,
     //   'isaacs', 'github', 9,
@@ -224,6 +227,31 @@
         );
       }
     );
+  };
+
+
+  out.run = function () {
+
+    OAuth.initialize('2UaA4CNWToZIdvoqR8lJY8MclPI');
+    OAuth.popup('github')
+      .done(function(result) {
+          console.log(arguments);
+          githubAccessToken = result.access_token;
+
+          console.log('githubAccessToken', githubAccessToken);
+
+          octo = new Octokat({
+            // username: "USER_NAME",
+            // password: "PASSWORD"
+            //
+            token: githubAccessToken
+          });
+
+          postAuth();
+      })
+      .fail(function (err) {
+          console.error(arguments);
+      });
   };
 
 
