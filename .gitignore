@@ -4,6 +4,7 @@ bower_components
 dist
 
 *.bak
+*.private.*
 
 
 # Logs
