@@ -240,11 +240,30 @@
 
           console.log('githubAccessToken', githubAccessToken);
 
+          var storage = window.localStorage;
+
           octo = new Octokat({
             // username: "USER_NAME",
             // password: "PASSWORD"
             //
-            token: githubAccessToken
+            token: githubAccessToken,
+            cacheHandler: {
+              get: function (method, path) {
+                console.log('get', arguments);
+                var data = storage.getItem(method + ':' + path);
+                if (data == null) return null;
+                return JSON.parse(data);
+              },
+              add: function (method, path, eTag, data, status) {
+                console.log('add', arguments);
+                try {
+                  storage.setItem(method + ':' + path, JSON.stringify(data));
+                }
+                catch(e) {
+                  console.error('Error setting storage', e);
+                }
+              }
+            }
           });
 
           postAuth();
@@ -297,14 +316,14 @@
   function getData(cacheKey, onOcto, done) {
     // console.log(cacheKey);
 
-    var cached = localStorage.getItem(cacheKey);
+    // var cached = localStorage.getItem(cacheKey);
 
     // console.log(cached);
 
-    if (cached) {
-      done(null, JSON.parse(cached));
-      return;
-    }
+    // if (cached) {
+    //   done(null, JSON.parse(cached));
+    //   return;
+    // }
 
     var promiser = function () { return onOcto(octo); };
     var allData = [];
@@ -328,7 +347,7 @@
       function (err) {
         if (err) throw err;
 
-        localStorage.setItem(cacheKey, JSON.stringify(allData));
+        // localStorage.setItem(cacheKey, JSON.stringify(allData));
 
         done(err, allData);
       }
