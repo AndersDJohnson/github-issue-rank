@@ -1,6 +1,5 @@
-
-var assert = require('assert');
-var ghir = require('../dist');
+import assert from 'assert';
+import {GitHubIssueRank as ghir} from '../src';
 
 assert.ok(true);
 
