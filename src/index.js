@@ -138,7 +138,11 @@ var GitHubIssueRank = (function () {
       }
     ];
 
-    var columns = ['number', 'title', 'voteCount', 'comments', 'ratio'];
+    var columns = [
+      'number',
+      'title',
+      'voteCount'
+    ];
 
     components.push(
       <Griddle
