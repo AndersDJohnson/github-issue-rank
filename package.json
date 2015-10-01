@@ -14,7 +14,7 @@
   "devDependencies": {},
   "scripts": {
     "test": "node test",
-    "watch": "babel --watch src/ --out-dir dist/"
+    "watch": "babel --modules umd --source-maps --watch src/ --out-dir dist/"
   },
   "author": "",
   "license": "MIT"

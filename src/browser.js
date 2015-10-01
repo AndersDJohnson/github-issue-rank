@@ -1,2 +1,3 @@
+import {GitHubIssueRank} from 'index';
 
-githubIssueRank.run();
+GitHubIssueRank.run();

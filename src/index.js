@@ -1,24 +1,9 @@
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(['octokat', 'react', 'fixed-data-table', 'oauth'], function (Octokat, React, FixedDataTable, OAuth) {
-            return (root.githubIssueRank = factory(Octokat, React, FixedDataTable, OAuth));
-        });
-    } else if (typeof module === 'object' && module.exports) {
-        // Node. Does not work with strict CommonJS, but
-        // only CommonJS-like enviroments that support module.exports,
-        // like Node.
-        module.exports = factory(
-          require('octokat'),
-          require('react'),
-          require('fixed-data-table')
-          // TODO: OAuth for Node.js
-        );
-    } else {
-        // Browser globals
-        root.githubIssueRank = factory(Octokat, React, FixedDataTable, OAuth);
-    }
-}(this, function (Octokat, React, FixedDataTable, OAuth) {
+import Octokat from 'octokat';
+import React from 'react';
+import FixedDataTable from 'fixed-data-table';
+import OAuth from 'oauth-js';
+
+var GitHubIssueRank = (function () {
 
   var out = {};
 
@@ -415,7 +400,8 @@
     getData(cacheKey, onOcto, done);
   };
 
-
   return out;
 
-}));
+})();
+
+export {GitHubIssueRank};
