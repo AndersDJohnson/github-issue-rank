@@ -123,7 +123,7 @@ var GitHubIssueRank = (function () {
 
     var LinkComponent = React.createClass({
       render: function () {
-        return <a href={this.props.rowData.htmlUrl}>{this.props.data}</a>;
+        return <a href={this.props.rowData.htmlUrl} target="_blank">{this.props.data}</a>;
       }
     });
 
