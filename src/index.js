@@ -44,7 +44,6 @@ var GitHubIssueRank = (function () {
 
 
   var getVoteCountForComment = function (comments) {
-    // console.log(comments);
 
     var voteCount = 0;
 
@@ -55,18 +54,12 @@ var GitHubIssueRank = (function () {
 
       var login = comment.user.login;
 
-      // console.log('comment', comment);
-
       if (alreadyUsers[login]) {
         return;
       }
 
       var thisHasVote = hasVote(body);
       if (thisHasVote) {
-        // console.log('has vote', thisHasVote, body);
-        // if (comment.issueUrl.match(/\/2$/)) {
-        //   console.log('comment', login, comment.body);
-        // }
 
         alreadyUsers[login] = true;
 
@@ -94,7 +87,6 @@ var GitHubIssueRank = (function () {
 
 
   var withIssuesAndComments = function (err, results) {
-    // results = _.sortBy(results, function (r) { return r.issue.number; });
 
     results.forEach(function (result) {
       var voteCount = 0;
