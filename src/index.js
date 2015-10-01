@@ -2,7 +2,6 @@ import Octokat from 'octokat';
 import React from 'react';
 import async from 'async';
 import _ from 'lodash';
-// import FixedDataTable from 'fixed-data-table';
 // import OAuth from 'oauth-js';
 // import OAuth from 'oauthio';
 // import OAuth from '../bower_components/oauth-js/dist/oauth.js';
@@ -88,126 +87,83 @@ var GitHubIssueRank = (function () {
         // console.log('eachIssueComment', issue, comments);
       },
       function (err, results) {
-        // results = _.sortBy(results, function (r) { return r.issue.number; });
-
-        results.forEach(function (result) {
-          var voteCount = 0;
-          if (result.comments) {
-            voteCount = getVoteCountForComment(result.comments);
-          }
-          result.voteCount = voteCount;
-        });
-
-        results = _.sortBy(results, function (result) {
-          return -1 * result.voteCount;
-        });
-
-        var components = [];
-
-        // var Table = FixedDataTable.Table;
-        // var Column = FixedDataTable.Column;
-
-        // Table data as a list of array.
-        var rows = [];
-
-        results.forEach(function (result) {
-          var issue = result.issue;
-          var voteCount = result.voteCount;
-
-          var ratio = voteCount / issue.comments;
-
-          rows.push({
-            number: issue.number||'',
-            title: issue.title||'',
-            htmlUrl: issue.htmlUrl||'',
-            voteCount: voteCount ||'',
-            comments: issue.comments||'',
-            ratio:ratio ||''
-          });
-        });
-
-        // var rowGetter = function (rowIndex) {
-        //   return rows[rowIndex];
-        // };
-
-        // var titleRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
-        //   return (
-        //     <a target="_blank"
-        //       href={rowData[2]}
-        //     >
-        //       {rowData[1]}
-        //     </a>
-        //   );
-        // };
-        // var issueNumberRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
-        //   return (
-        //     <a target="_blank"
-        //       href={rowData[2]}
-        //     >
-        //       {rowData[0]}
-        //     </a>
-        //   );
-        // };
-        // var ratioRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
-        //   var ratio = rowData[5];
-        //   var perc = ratio * 100;
-        //   var pretty = perc.toFixed(1) + '%';
-        //   return pretty;
-        // };
-
-        console.log('Griddle', Griddle);
-
-        components.push(
-          <Griddle results={rows} />
-        );
-
-        // components.push(
-        //   <Table
-        //     rowHeight={50}
-        //     rowGetter={rowGetter}
-        //     rowsCount={rows.length}
-        //     width={700}
-        //     height={400}
-        //     headerHeight={50}>
-        //     <Column
-        //       label="Issue #"
-        //       width={100}
-        //       dataKey={0}
-        //       cellRenderer={issueNumberRenderer}
-        //     />
-        //     <Column
-        //       label="Title"
-        //       width={200}
-        //       dataKey={1}
-        //       cellRenderer={titleRenderer}
-        //     />
-        //     <Column
-        //       label="# Votes"
-        //       width={100}
-        //       dataKey={3}
-        //     />
-        //     <Column
-        //       label="# Comments"
-        //       width={100}
-        //       dataKey={4}
-        //     />
-        //     <Column
-        //       label="Ratio"
-        //       width={100}
-        //       dataKey={5}
-        //       cellRenderer={ratioRenderer}
-        //     />
-        //   </Table>
-        // );
-
-        React.render(
-          <div>{components}</div>
-          ,
-          document.getElementById('wrap')
-        );
+        withIssuesAndComments(err, results);
       }
     );
   };
+
+
+  var withIssuesAndComments = function (err, results) {
+    // results = _.sortBy(results, function (r) { return r.issue.number; });
+
+    results.forEach(function (result) {
+      var voteCount = 0;
+      if (result.comments) {
+        voteCount = getVoteCountForComment(result.comments);
+      }
+      result.voteCount = voteCount;
+    });
+
+    results = _.sortBy(results, function (result) {
+      return -1 * result.voteCount;
+    });
+
+    var components = [];
+
+    var rows = [];
+
+    results.forEach(function (result) {
+      var issue = result.issue;
+      var voteCount = result.voteCount;
+
+      // var ratio = voteCount / issue.comments;
+
+      rows.push({
+        number: issue.number||'',
+        title: issue.title||'',
+        htmlUrl: issue.htmlUrl||'',
+        voteCount: voteCount ||'',
+        // comments: issue.comments||'',
+        // ratio:ratio ||''
+      });
+    });
+
+
+    var LinkComponent = React.createClass({
+      render: function () {
+        return <a href={this.props.rowData.htmlUrl}>{this.props.data}</a>;
+      }
+    });
+
+    var columnMetadata = [
+      {
+        columnName: 'number',
+        customComponent: LinkComponent
+      },
+      {
+        columnName: 'title',
+        customComponent: LinkComponent
+      }
+    ];
+
+    var columns = ['number', 'title', 'voteCount', 'comments', 'ratio'];
+
+    components.push(
+      <Griddle
+        results={rows}
+        columnMetadata={columnMetadata}
+        columns={columns}
+        resultsPerPage={25}
+      />
+    );
+
+
+    React.render(
+      <div>{components}</div>
+      ,
+      document.getElementById('wrap')
+    );
+  }
 
 
   out.run = function (options) {
