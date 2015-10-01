@@ -1,24 +1,9 @@
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(['octokat', 'react', 'fixed-data-table', 'oauth'], function (Octokat, React, FixedDataTable, OAuth) {
-            return (root.githubIssueRank = factory(Octokat, React, FixedDataTable, OAuth));
-        });
-    } else if (typeof module === 'object' && module.exports) {
-        // Node. Does not work with strict CommonJS, but
-        // only CommonJS-like enviroments that support module.exports,
-        // like Node.
-        module.exports = factory(
-          require('octokat'),
-          require('react'),
-          require('fixed-data-table')
-          // TODO: OAuth for Node.js
-        );
-    } else {
-        // Browser globals
-        root.githubIssueRank = factory(Octokat, React, FixedDataTable, OAuth);
-    }
-}(this, function (Octokat, React, FixedDataTable, OAuth) {
+import Octokat from 'octokat';
+import React from 'react';
+import FixedDataTable from 'fixed-data-table';
+import OAuth from 'oauth-js';
+
+var GitHubIssueRank = (function () {
 
   var out = {};
 
@@ -240,11 +225,60 @@
 
           console.log('githubAccessToken', githubAccessToken);
 
+
+          /**
+           * https://github.com/philschatz/gh-board/blob/master/src/github-client.js#L7-L66
+           */
+          var cacheHandler = new (class CacheHandler {
+            constructor() {
+              // Pull data from `sessionStorage`
+              // this.storage = window.sessionStorage;
+              this.storage = window.localStorage;
+            }
+            get(method, path) {
+              var key = method + ' ' + path;
+              var ret = this.storage.getItem(key);
+              if (! ret) return null;
+              ret = JSON.parse(ret);
+              var {data, linkRelations} = ret;
+              _.each(linkRelations, (value, key) => {
+                if (value) {
+                  data[key] = value;
+                }
+              });
+              return ret;
+            }
+            add(method, path, eTag, data, status) {
+              var linkRelations = {};
+              // if data is an array, it contains additional link relations (to other pages)
+              if (_.isArray(data)) {
+                _.each(['next', 'previous', 'first', 'last'], (name) => {
+                  var key = name + '_page_url';
+                  if (data[key]) {
+                    linkRelations[key] = data[key];
+                  }
+                });
+              }
+
+              var key = method + ' ' + path;
+              var cached = {eTag, data, status, linkRelations};
+              cached = JSON.stringify(cached);
+
+              try {
+                this.storage.setItem(key, cached);
+              } catch (e) {
+                console.error(e);
+              }
+            }
+          });
+
+
           octo = new Octokat({
             // username: "USER_NAME",
             // password: "PASSWORD"
             //
-            token: githubAccessToken
+            token: githubAccessToken,
+            cacheHandler: cacheHandler
           });
 
           postAuth();
@@ -297,14 +331,14 @@
   function getData(cacheKey, onOcto, done) {
     // console.log(cacheKey);
 
-    var cached = localStorage.getItem(cacheKey);
+    // var cached = localStorage.getItem(cacheKey);
 
     // console.log(cached);
 
-    if (cached) {
-      done(null, JSON.parse(cached));
-      return;
-    }
+    // if (cached) {
+    //   done(null, JSON.parse(cached));
+    //   return;
+    // }
 
     var promiser = function () { return onOcto(octo); };
     var allData = [];
@@ -328,7 +362,7 @@
       function (err) {
         if (err) throw err;
 
-        localStorage.setItem(cacheKey, JSON.stringify(allData));
+        // localStorage.setItem(cacheKey, JSON.stringify(allData));
 
         done(err, allData);
       }
@@ -366,7 +400,8 @@
     getData(cacheKey, onOcto, done);
   };
 
-
   return out;
 
-}));
+})();
+
+export {GitHubIssueRank};
