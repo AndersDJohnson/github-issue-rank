@@ -130,11 +130,21 @@ var GitHubIssueRank = (function () {
     var columnMetadata = [
       {
         columnName: 'number',
-        customComponent: LinkComponent
+        displayName: '#',
+        customComponent: LinkComponent,
+        cssClassName: 'griddle-column-number'
       },
       {
         columnName: 'title',
-        customComponent: LinkComponent
+        displayName: 'Title',
+        customComponent: LinkComponent,
+        cssClassName: 'griddle-column-title'
+      },
+      {
+        columnName: 'voteCount',
+        displayName: '# Votes',
+        customComponent: LinkComponent,
+        cssClassName: 'griddle-column-voteCount'
       }
     ];
 
