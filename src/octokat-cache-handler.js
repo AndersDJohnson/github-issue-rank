@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 /**
  * https://github.com/philschatz/gh-board/blob/master/src/github-client.js#L7-L66
  */
