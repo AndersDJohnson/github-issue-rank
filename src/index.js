@@ -180,7 +180,6 @@ var GitHubIssueRank = (function () {
 
     OAuth.popup('github')
       .done(function(result) {
-          console.log(arguments);
           githubAccessToken = result.access_token;
 
           console.log('githubAccessToken', githubAccessToken);
@@ -192,7 +191,7 @@ var GitHubIssueRank = (function () {
             // password: "PASSWORD"
             //
             token: githubAccessToken,
-            OctokatCacheHandler: octokatCacheHandler
+            cacheHandler: octokatCacheHandler
           });
 
           postAuth(options);
