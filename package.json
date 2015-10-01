@@ -19,6 +19,6 @@
     "watch-src":  "babel --modules umd --source-maps --watch src/  --out-dir build/src",
     "watch-test": "babel --modules umd --source-maps --watch test/ --out-dir build/test"
   },
-  "author": "",
+  "author": "Anders D. Johnson",
   "license": "MIT"
 }
