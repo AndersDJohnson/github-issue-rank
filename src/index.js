@@ -2,6 +2,7 @@ import Octokat from 'octokat';
 import React from 'react';
 import FixedDataTable from 'fixed-data-table';
 import OAuth from 'oauth-js';
+import {CacheHandler} from './cache-handler';
 
 var GitHubIssueRank = (function () {
 
@@ -15,20 +16,14 @@ var GitHubIssueRank = (function () {
 
     lines.forEach(function (line) {
       if (found) return;
-      var isQuote = line.match(/^\s*>/);
-      if (isQuote) return;
-      // found = line.match(/(^|[\W\b])(\+1|:\+1:|:thumbsup:|👍)([\W\b]|$)/g);
+      var isBlockQuote = line.match(/^\s*>/);
+      if (isBlockQuote) return;
       found = found || line.match(/(^|[\W\b])(\+1|:\+1:|:thumbsup:|\uD83D\uDC4D)([\W\b]|$)/g);
+      // TODO: Ignore +1's within quotation marks?
     });
 
     return found;
-
-    // return !! str.match(/(^|[\b])(\+1|:\+1:|:thumbsup:|👍)([\b]|$)/g);
-    // return !! str.match(/(^|[\W\b])(\+1|:\+1:|:thumbsup:|👍)([\W\b]|$)/g);
-    // return 
   };
-
-  // return out;
 
 
 
@@ -216,53 +211,7 @@ var GitHubIssueRank = (function () {
 
           console.log('githubAccessToken', githubAccessToken);
 
-
-          /**
-           * https://github.com/philschatz/gh-board/blob/master/src/github-client.js#L7-L66
-           */
-          var cacheHandler = new (class CacheHandler {
-            constructor() {
-              // Pull data from `sessionStorage`
-              // this.storage = window.sessionStorage;
-              this.storage = window.localStorage;
-            }
-            get(method, path) {
-              var key = method + ' ' + path;
-              var ret = this.storage.getItem(key);
-              if (! ret) return null;
-              ret = JSON.parse(ret);
-              var {data, linkRelations} = ret;
-              _.each(linkRelations, (value, key) => {
-                if (value) {
-                  data[key] = value;
-                }
-              });
-              return ret;
-            }
-            add(method, path, eTag, data, status) {
-              var linkRelations = {};
-              // if data is an array, it contains additional link relations (to other pages)
-              if (_.isArray(data)) {
-                _.each(['next', 'previous', 'first', 'last'], (name) => {
-                  var key = name + '_page_url';
-                  if (data[key]) {
-                    linkRelations[key] = data[key];
-                  }
-                });
-              }
-
-              var key = method + ' ' + path;
-              var cached = {eTag, data, status, linkRelations};
-              cached = JSON.stringify(cached);
-
-              try {
-                this.storage.setItem(key, cached);
-              } catch (e) {
-                console.error(e);
-              }
-            }
-          });
-
+          var cacheHandler = new CacheHandler();
 
           octo = new Octokat({
             // username: "USER_NAME",

@@ -9,7 +9,9 @@
   "dependencies": {
     "babel": "^5.8.23",
     "octokat": "^0.4.12",
-    "react": "^0.13.3"
+    "react": "^0.13.3",
+    "fixed-data-table": "~0.4.7",
+    "oauth-js": "~0.9.9"
   },
   "devDependencies": {},
   "scripts": {

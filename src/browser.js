@@ -1,4 +1,4 @@
-import {GitHubIssueRank} from 'index';
+import {GitHubIssueRank} from './index';
 
 GitHubIssueRank.run({
   oAuthIoKey: '2UaA4CNWToZIdvoqR8lJY8MclPI',
