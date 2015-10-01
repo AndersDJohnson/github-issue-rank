@@ -8,6 +8,8 @@ import _ from 'lodash';
 import {OctokatCacheHandler} from './octokat-cache-handler';
 import {fetchAll} from './octokat-fetch-all';
 import Griddle from 'griddle-react';
+import { Router, Route, Link } from 'react-router';
+
 
 var GitHubIssueRank = (function () {
 
@@ -73,6 +75,11 @@ var GitHubIssueRank = (function () {
 
   var postAuth = function (options) {
 
+  };
+
+
+  var getRepo = function () {
+
     getIssuesThenComments(
       options.owner,
       options.repo,
@@ -83,6 +90,7 @@ var GitHubIssueRank = (function () {
         withIssuesAndComments(err, results);
       }
     );
+
   };
 
 
@@ -163,18 +171,73 @@ var GitHubIssueRank = (function () {
       />
     );
 
-
-    React.render(
-      <div>{components}</div>
-      ,
-      document.getElementById('wrap')
-    );
   }
+
+
+  out.render = function () {
+    var AppRoute = React.createClass({
+      componentDidMount() {
+        console.log(this.props.params);
+      },
+
+      render() {
+        return (
+          <div>
+            <h1>GitHub Issue Rank</h1>
+
+            <ul>
+              <li>
+                <Link to={`/oauth-io/oauth-js`}>/oauth-io/oauth-js</Link>
+              </li>
+            </ul>
+          </div>
+        )
+      }
+    });
+
+
+    var NoRoute = React.createClass({
+      componentDidMount() {
+        console.log(this.props.params);
+      },
+
+      render() {
+        return (
+          <h1>404</h1>
+        )
+      }
+    });
+
+
+    var RepoRoute = React.createClass({
+      componentDidMount() {
+        console.log('RepoRoute', this.props.params);
+      },
+
+      render() {
+        return (
+          <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
+        )
+      }
+    });
+
+
+    React.render((
+      <Router>
+        <Route path="/" component={AppRoute}>
+          <Route path=":owner/:repo" component={RepoRoute}/>
+          <Route path="*" component={NoRoute}/>
+        </Route>
+      </Router>
+    ), document.getElementById('app'));
+  };
 
 
   out.run = function (options) {
 
     options = options || {};
+
+    out.render();
 
     OAuth.initialize(options.oAuthIoKey);
 
