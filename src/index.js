@@ -1,9 +1,14 @@
 import Octokat from 'octokat';
 import React from 'react';
-import FixedDataTable from 'fixed-data-table';
-import OAuth from 'oauth-js';
+import async from 'async';
+import _ from 'lodash';
+// import FixedDataTable from 'fixed-data-table';
+// import OAuth from 'oauth-js';
+// import OAuth from 'oauthio';
+// import OAuth from '../bower_components/oauth-js/dist/oauth.js';
 import {OctokatCacheHandler} from './octokat-cache-handler';
 import {fetchAll} from './octokat-fetch-all';
+import Griddle from 'griddle-react';
 
 var GitHubIssueRank = (function () {
 
@@ -99,8 +104,8 @@ var GitHubIssueRank = (function () {
 
         var components = [];
 
-        var Table = FixedDataTable.Table;
-        var Column = FixedDataTable.Column;
+        // var Table = FixedDataTable.Table;
+        // var Column = FixedDataTable.Column;
 
         // Table data as a list of array.
         var rows = [];
@@ -111,83 +116,89 @@ var GitHubIssueRank = (function () {
 
           var ratio = voteCount / issue.comments;
 
-          rows.push([
-            issue.number,
-            issue.title,
-            issue.htmlUrl,
-            voteCount,
-            issue.comments,
-            ratio
-          ]);
+          rows.push({
+            number: issue.number||'',
+            title: issue.title||'',
+            htmlUrl: issue.htmlUrl||'',
+            voteCount: voteCount ||'',
+            comments: issue.comments||'',
+            ratio:ratio ||''
+          });
         });
 
-        var rowGetter = function (rowIndex) {
-          return rows[rowIndex];
-        };
+        // var rowGetter = function (rowIndex) {
+        //   return rows[rowIndex];
+        // };
 
-        var titleRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
-          return (
-            <a target="_blank"
-              href={rowData[2]}
-            >
-              {rowData[1]}
-            </a>
-          );
-        };
-        var issueNumberRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
-          return (
-            <a target="_blank"
-              href={rowData[2]}
-            >
-              {rowData[0]}
-            </a>
-          );
-        };
-        var ratioRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
-          var ratio = rowData[5];
-          var perc = ratio * 100;
-          var pretty = perc.toFixed(1) + '%';
-          return pretty;
-        };
+        // var titleRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
+        //   return (
+        //     <a target="_blank"
+        //       href={rowData[2]}
+        //     >
+        //       {rowData[1]}
+        //     </a>
+        //   );
+        // };
+        // var issueNumberRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
+        //   return (
+        //     <a target="_blank"
+        //       href={rowData[2]}
+        //     >
+        //       {rowData[0]}
+        //     </a>
+        //   );
+        // };
+        // var ratioRenderer = function (cellData, cellDataKey, rowData, rowIndex, columnData, width) {
+        //   var ratio = rowData[5];
+        //   var perc = ratio * 100;
+        //   var pretty = perc.toFixed(1) + '%';
+        //   return pretty;
+        // };
+
+        console.log('Griddle', Griddle);
 
         components.push(
-          <Table
-            rowHeight={50}
-            rowGetter={rowGetter}
-            rowsCount={rows.length}
-            width={700}
-            height={400}
-            headerHeight={50}>
-            <Column
-              label="Issue #"
-              width={100}
-              dataKey={0}
-              cellRenderer={issueNumberRenderer}
-            />
-            <Column
-              label="Title"
-              width={200}
-              dataKey={1}
-              cellRenderer={titleRenderer}
-            />
-            <Column
-              label="# Votes"
-              width={100}
-              dataKey={3}
-            />
-            <Column
-              label="# Comments"
-              width={100}
-              dataKey={4}
-            />
-            <Column
-              label="Ratio"
-              width={100}
-              dataKey={5}
-              cellRenderer={ratioRenderer}
-            />
-          </Table>
+          <Griddle results={rows} />
         );
+
+        // components.push(
+        //   <Table
+        //     rowHeight={50}
+        //     rowGetter={rowGetter}
+        //     rowsCount={rows.length}
+        //     width={700}
+        //     height={400}
+        //     headerHeight={50}>
+        //     <Column
+        //       label="Issue #"
+        //       width={100}
+        //       dataKey={0}
+        //       cellRenderer={issueNumberRenderer}
+        //     />
+        //     <Column
+        //       label="Title"
+        //       width={200}
+        //       dataKey={1}
+        //       cellRenderer={titleRenderer}
+        //     />
+        //     <Column
+        //       label="# Votes"
+        //       width={100}
+        //       dataKey={3}
+        //     />
+        //     <Column
+        //       label="# Comments"
+        //       width={100}
+        //       dataKey={4}
+        //     />
+        //     <Column
+        //       label="Ratio"
+        //       width={100}
+        //       dataKey={5}
+        //       cellRenderer={ratioRenderer}
+        //     />
+        //   </Table>
+        // );
 
         React.render(
           <div>{components}</div>

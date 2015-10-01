@@ -11,14 +11,26 @@
     "octokat": "^0.4.12",
     "react": "^0.13.3",
     "fixed-data-table": "~0.4.7",
-    "oauth-js": "~0.9.9",
-    "async": "~1.4.2"
+    "async": "~1.4.2",
+    "griddle": "~0.1.2",
+    "underscore": "~1.8.3",
+    "griddle-react": "~0.2.14",
+    "lodash": "~3.10.1",
+    "es6-promise": "~3.0.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "babel": "^5.8.23",
+    "browserify": "~11.2.0",
+    "babelify": "~6.3.0",
+    "watchify": "~3.4.0",
+    "debowerify": "~1.3.1"
+  },
   "scripts": {
-    "test": "node build/test",
-    "watch-src": "babel --modules umd --source-maps --watch src/  --out-dir build/src",
-    "watch-test": "babel --modules umd --source-maps --watch test/ --out-dir build/test"
+    "test": "node build/test.bundle.js",
+    "build-src": "browserify --debug src/browser.js -t babelify -t debowerify --outfile build/browser.bundle.js",
+    "build-test": "browserify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js",
+    "watch-src": "watchify --debug src/browser.js -t babelify -t debowerify --outfile build/browser.bundle.js",
+    "watch-test": "watchify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js"
   },
   "author": "Anders D. Johnson",
   "license": "MIT"
