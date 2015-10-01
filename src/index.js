@@ -319,17 +319,7 @@ var GitHubIssueRank = (function () {
   };
 
 
-  function getData(cacheKey, onOcto, done) {
-    // console.log(cacheKey);
-
-    // var cached = localStorage.getItem(cacheKey);
-
-    // console.log(cached);
-
-    // if (cached) {
-    //   done(null, JSON.parse(cached));
-    //   return;
-    // }
+  function fetchAllPages(cacheKey, onOcto, done) {
 
     var promiser = function () { return onOcto(octo); };
     var allData = [];
@@ -353,8 +343,6 @@ var GitHubIssueRank = (function () {
       function (err) {
         if (err) throw err;
 
-        // localStorage.setItem(cacheKey, JSON.stringify(allData));
-
         done(err, allData);
       }
     );
@@ -373,7 +361,7 @@ var GitHubIssueRank = (function () {
         .fetch();
     };
 
-    getData(cacheKey, onOcto, done);
+    fetchAllPages(cacheKey, onOcto, done);
   };
 
 
@@ -388,7 +376,7 @@ var GitHubIssueRank = (function () {
         .fetch();
     };
 
-    getData(cacheKey, onOcto, done);
+    fetchAllPages(cacheKey, onOcto, done);
   };
 
   return out;
