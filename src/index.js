@@ -78,23 +78,11 @@ var GitHubIssueRank = (function () {
   };
 
 
-  var postAuth = function () {
-    // getComments(
-    //   //'AndersDJohnson', 'magnificent.js', 32,
-    //   'isaacs', 'github', 9,
-    //   function (err, comments) {
-    //     if (err) throw err;
-    //     withComments(comments);
-    //   }
-    // );
-    // getIssues(
-    //   'AndersDJohnson', 'magnificent.js',
-    //   function (err, issues) {
-    //     console.log(err, issues);
-    //   }
-    // );
+  var postAuth = function (options) {
+
     getIssuesThenComments(
-      'isaacs', 'github', 
+      options.owner,
+      options.repo,
       function (err, issue, comments) {
         // console.log('eachIssueComment', issue, comments);
       },
@@ -215,9 +203,12 @@ var GitHubIssueRank = (function () {
   };
 
 
-  out.run = function () {
+  out.run = function (options) {
 
-    OAuth.initialize('2UaA4CNWToZIdvoqR8lJY8MclPI');
+    options = options || {};
+
+    OAuth.initialize(options.oAuthIoKey);
+
     OAuth.popup('github')
       .done(function(result) {
           console.log(arguments);
@@ -281,7 +272,7 @@ var GitHubIssueRank = (function () {
             cacheHandler: cacheHandler
           });
 
-          postAuth();
+          postAuth(options);
       })
       .fail(function (err) {
           console.error(arguments);
