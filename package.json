@@ -11,12 +11,13 @@
     "octokat": "^0.4.12",
     "react": "^0.13.3",
     "fixed-data-table": "~0.4.7",
-    "oauth-js": "~0.9.9"
+    "oauth-js": "~0.9.9",
+    "async": "~1.4.2"
   },
   "devDependencies": {},
   "scripts": {
     "test": "node build/test",
-    "watch-src":  "babel --modules umd --source-maps --watch src/  --out-dir build/src",
+    "watch-src": "babel --modules umd --source-maps --watch src/  --out-dir build/src",
     "watch-test": "babel --modules umd --source-maps --watch test/ --out-dir build/test"
   },
   "author": "Anders D. Johnson",

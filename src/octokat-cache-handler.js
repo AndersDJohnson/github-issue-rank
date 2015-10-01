@@ -1,7 +1,7 @@
 /**
  * https://github.com/philschatz/gh-board/blob/master/src/github-client.js#L7-L66
  */
-class CacheHandler {
+class OctokatCacheHandler {
   constructor() {
     // Pull data from `sessionStorage`
     // this.storage = window.sessionStorage;
@@ -44,4 +44,4 @@ class CacheHandler {
   }
 };
 
-export {CacheHandler};
+export {OctokatCacheHandler};

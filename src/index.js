@@ -2,7 +2,8 @@ import Octokat from 'octokat';
 import React from 'react';
 import FixedDataTable from 'fixed-data-table';
 import OAuth from 'oauth-js';
-import {CacheHandler} from './cache-handler';
+import {OctokatCacheHandler} from './octokat-cache-handler';
+import {fetchAll} from './octokat-fetch-all';
 
 var GitHubIssueRank = (function () {
 
@@ -27,7 +28,7 @@ var GitHubIssueRank = (function () {
 
 
 
-  var octo;
+  var octokat;
   var githubAccessToken;
 
 
@@ -211,14 +212,14 @@ var GitHubIssueRank = (function () {
 
           console.log('githubAccessToken', githubAccessToken);
 
-          var cacheHandler = new CacheHandler();
+          var octokatCacheHandler = new OctokatCacheHandler();
 
-          octo = new Octokat({
+          octokat = new Octokat({
             // username: "USER_NAME",
             // password: "PASSWORD"
             //
             token: githubAccessToken,
-            cacheHandler: cacheHandler
+            OctokatCacheHandler: octokatCacheHandler
           });
 
           postAuth(options);
@@ -267,50 +268,19 @@ var GitHubIssueRank = (function () {
     );
   };
 
-
-  function fetchAllPages(cacheKey, onOcto, done) {
-
-    var promiser = function () { return onOcto(octo); };
-    var allData = [];
-
-    async.doWhilst(
-      function (cb) {
-        promiser().then(
-          function (data) {
-            allData = allData.concat(data);
-            promiser = data.nextPage;
-            cb();
-          },
-          function (err) {
-            cb(err);
-          }
-        );
-      },
-      function () {
-        return promiser;
-      },
-      function (err) {
-        if (err) throw err;
-
-        done(err, allData);
-      }
-    );
-  };
-
-
   function getComments(owner, repo, issue, done) {
 
     var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
 
-    var onOcto = function (octo) {
-      return octo
+    var requester = function (octokat) {
+      return octokat
         .repos(owner, repo)
         .issues(issue)
         .comments
         .fetch();
     };
 
-    fetchAllPages(cacheKey, onOcto, done);
+    fetchAll(cacheKey, octokat, requester, done);
   };
 
 
@@ -318,14 +288,14 @@ var GitHubIssueRank = (function () {
 
     var cacheKey = 'issues:' + owner + '/' + repo;
 
-    var onOcto = function (octo) {
-      return octo
+    var requester = function (octokat) {
+      return octokat
         .repos(owner, repo)
         .issues
         .fetch();
     };
 
-    fetchAllPages(cacheKey, onOcto, done);
+    fetchAll(cacheKey, octokat, requester, done);
   };
 
   return out;
