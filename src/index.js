@@ -184,15 +184,20 @@ var GitHubIssueRank = (function () {
       },
 
       componentDidUpdate() {
-        this.setState({rows:[]});
+        this.unmounting = false;
         console.log('RepoRoute update', arguments, this);
         this.showRepo();
       },
 
       componentDidMount() {
-        this.setState({rows:[]});
+        this.unmounting = false;
         console.log('RepoRoute mount');
         this.showRepo();
+      },
+
+      componentWillUnmount () {
+        // allows us to ignore an inflight request in scenario 4
+        this.unmounting = true;
       },
 
       showRepo() {
@@ -200,8 +205,17 @@ var GitHubIssueRank = (function () {
         var owner = params.owner;
         var repo = params.repo;
 
+        if (owner === this.owner && repo === this.repo) {
+          return;
+        }
+
+        this.owner = owner;
+        this.repo = repo;
+
         showRepo(owner, repo, (err, rows) => {
-          this.setState({rows});
+          if (! this.unmounting) {
+            this.setState({rows});
+          }
         });
       },
 
