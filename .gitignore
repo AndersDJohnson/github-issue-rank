@@ -1,9 +1,4 @@
 
-
-bower_components
-dist
-build
-
 *.bak
 *.private.*
 
