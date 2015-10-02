@@ -9,6 +9,6 @@ GitHubIssueRank.run({
   // owner: 'AndersDJohnson',
   // repo: 'magnificent.js'
 
-  owner: 'oauth-io',
-  repo: 'oauth-js'
+  // owner: 'oauth-io',
+  // repo: 'oauth-js'
 });
