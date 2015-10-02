@@ -134,14 +134,47 @@ var GitHubIssueRank = (function () {
 
   out.render = function () {
     var AppRoute = React.createClass({
+
+      getInitialState() {
+        return {rateLimit: {}};
+      },
+
       componentDidMount() {
         console.log(this.props.params);
+
+        var checkRateLimit = () => {
+          if (!octokat) {
+            setTimeout(checkRateLimit, 2000);
+            return;
+          }
+          octokat.rateLimit.fetch().then(
+            (data) => {
+              var rateLimit = data.resources.core;
+              this.setState({rateLimit});
+              setTimeout(checkRateLimit, 2000);
+            },
+            () => {
+              console.error(arguments);
+            }
+          );
+        };
+        checkRateLimit();
       },
 
       render() {
         return (
           <div>
             <h1><Link to="/">GitHub Issue Rank</Link></h1>
+
+            <div>
+              <progress id="gh-api-limit"
+                title="API Requests Left"
+                value={this.state.rateLimit.remaining}
+                max={this.state.rateLimit.limit} />
+              <label for="gh-api-limit">
+                API Requests Left {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
+              </label>
+            </div>
 
             <ul>
               <li>
