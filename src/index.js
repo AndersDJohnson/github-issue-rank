@@ -145,7 +145,10 @@ var GitHubIssueRank = (function () {
 
             <ul>
               <li>
-                <Link to={`/oauth-io/oauth-js`}>/oauth-io/oauth-js</Link>
+                <Link to="/oauth-io/oauth-js">/oauth-io/oauth-js</Link>
+              </li>
+              <li>
+                <Link to="/isaacs/github">/isaacs/github</Link>
               </li>
             </ul>
 
@@ -177,17 +180,28 @@ var GitHubIssueRank = (function () {
     var RepoRoute = React.createClass({
 
       getInitialState() {
-        return {};
+        return {rows:[]};
+      },
+
+      componentDidUpdate() {
+        this.setState({rows:[]});
+        console.log('RepoRoute update', arguments, this);
+        this.showRepo();
       },
 
       componentDidMount() {
+        this.setState({rows:[]});
+        console.log('RepoRoute mount');
+        this.showRepo();
+      },
+
+      showRepo() {
         var params = this.props.params;
         var owner = params.owner;
         var repo = params.repo;
-        console.log('RepoRoute', this.props.params);
 
         showRepo(owner, repo, (err, rows) => {
-          this.setState({rows})
+          this.setState({rows});
         });
       },
 
