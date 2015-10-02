@@ -2,7 +2,8 @@
 
 bower_components
 dist
-build
+build/**
+!.gitkeep
 
 *.bak
 *.private.*
