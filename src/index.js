@@ -78,23 +78,23 @@ var GitHubIssueRank = (function () {
   };
 
 
-  var getRepo = function () {
+  var showRepo = function (owner, repo, callback) {
 
     getIssuesThenComments(
-      options.owner,
-      options.repo,
+      owner,
+      repo,
       function (err, issue, comments) {
         // console.log('eachIssueComment', issue, comments);
       },
       function (err, results) {
-        withIssuesAndComments(err, results);
+        withIssuesAndComments(err, results, callback);
       }
     );
 
   };
 
 
-  var withIssuesAndComments = function (err, results) {
+  var withIssuesAndComments = function (err, results, callback) {
 
     results.forEach(function (result) {
       var voteCount = 0;
@@ -128,50 +128,8 @@ var GitHubIssueRank = (function () {
       });
     });
 
-
-    var LinkComponent = React.createClass({
-      render: function () {
-        return <a href={this.props.rowData.htmlUrl} target="_blank">{this.props.data}</a>;
-      }
-    });
-
-    var columnMetadata = [
-      {
-        columnName: 'number',
-        displayName: '#',
-        customComponent: LinkComponent,
-        cssClassName: 'griddle-column-number'
-      },
-      {
-        columnName: 'title',
-        displayName: 'Title',
-        customComponent: LinkComponent,
-        cssClassName: 'griddle-column-title'
-      },
-      {
-        columnName: 'voteCount',
-        displayName: '# Votes',
-        customComponent: LinkComponent,
-        cssClassName: 'griddle-column-voteCount'
-      }
-    ];
-
-    var columns = [
-      'number',
-      'title',
-      'voteCount'
-    ];
-
-    components.push(
-      <Griddle
-        results={rows}
-        columnMetadata={columnMetadata}
-        columns={columns}
-        resultsPerPage={25}
-      />
-    );
-
-  }
+    callback(err, rows);
+  };
 
 
   out.render = function () {
@@ -183,13 +141,15 @@ var GitHubIssueRank = (function () {
       render() {
         return (
           <div>
-            <h1>GitHub Issue Rank</h1>
+            <h1><Link to="/">GitHub Issue Rank</Link></h1>
 
             <ul>
               <li>
                 <Link to={`/oauth-io/oauth-js`}>/oauth-io/oauth-js</Link>
               </li>
             </ul>
+
+            {this.props.children}
           </div>
         )
       }
@@ -208,15 +168,69 @@ var GitHubIssueRank = (function () {
       }
     });
 
+    var LinkComponent = React.createClass({
+      render: function () {
+        return <a href={this.props.rowData.htmlUrl} target="_blank">{this.props.data}</a>;
+      }
+    });
 
     var RepoRoute = React.createClass({
+
+      getInitialState() {
+        return {};
+      },
+
       componentDidMount() {
+        var params = this.props.params;
+        var owner = params.owner;
+        var repo = params.repo;
         console.log('RepoRoute', this.props.params);
+
+        showRepo(owner, repo, (err, rows) => {
+          this.setState({rows})
+        });
       },
 
       render() {
+
+          var columnMetadata = [
+          {
+            columnName: 'number',
+            displayName: '#',
+            customComponent: LinkComponent,
+            cssClassName: 'griddle-column-number'
+          },
+          {
+            columnName: 'title',
+            displayName: 'Title',
+            customComponent: LinkComponent,
+            cssClassName: 'griddle-column-title'
+          },
+          {
+            columnName: 'voteCount',
+            displayName: '# Votes',
+            customComponent: LinkComponent,
+            cssClassName: 'griddle-column-voteCount'
+          }
+        ];
+
+        var columns = [
+          'number',
+          'title',
+          'voteCount'
+        ];
+
         return (
-          <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
+          <div>
+            <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
+
+            <Griddle
+              results={this.state.rows}
+              columnMetadata={columnMetadata}
+              columns={columns}
+              resultsPerPage={25}
+            />
+          </div>
         )
       }
     });
@@ -237,8 +251,6 @@ var GitHubIssueRank = (function () {
 
     options = options || {};
 
-    out.render();
-
     OAuth.initialize(options.oAuthIoKey);
 
     OAuth.popup('github')
@@ -258,6 +270,8 @@ var GitHubIssueRank = (function () {
           });
 
           postAuth(options);
+
+          out.render();
       })
       .fail(function (err) {
           console.error(arguments);
