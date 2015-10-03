@@ -8,6 +8,7 @@ import _ from 'lodash';
 import {OctokatCacheHandler} from './octokat-cache-handler';
 import {fetchAll} from './octokat-fetch-all';
 import Griddle from 'griddle-react';
+import Loader from 'react-loader';
 import { Router, Route, Link } from 'react-router';
 
 
@@ -213,7 +214,10 @@ var GitHubIssueRank = (function () {
     var RepoRoute = React.createClass({
 
       getInitialState() {
-        return {rows:[]};
+        return {
+          rows:[],
+          loaded: false
+        };
       },
 
       componentDidUpdate() {
@@ -242,12 +246,17 @@ var GitHubIssueRank = (function () {
           return;
         }
 
+        this.setState({loaded: false});
+
         this.owner = owner;
         this.repo = repo;
 
         showRepo(owner, repo, (err, rows) => {
           if (! this.unmounting) {
-            this.setState({rows});
+            this.setState({
+              rows,
+              loaded: true
+            });
           }
         });
       },
@@ -285,12 +294,14 @@ var GitHubIssueRank = (function () {
           <div>
             <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
 
-            <Griddle
-              results={this.state.rows}
-              columnMetadata={columnMetadata}
-              columns={columns}
-              resultsPerPage={25}
-            />
+            <Loader loaded={this.state.loaded}>
+              <Griddle
+                results={this.state.rows}
+                columnMetadata={columnMetadata}
+                columns={columns}
+                resultsPerPage={25}
+              />
+            </Loader>
           </div>
         )
       }
