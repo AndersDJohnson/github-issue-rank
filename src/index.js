@@ -309,6 +309,7 @@ var GitHubIssueRank = (function () {
             <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
 
             <Loader loaded={this.state.loaded}>
+              <div># issues: {this.state.rows.length}</div>
               <Griddle
                 results={this.state.rows}
                 columnMetadata={columnMetadata}
