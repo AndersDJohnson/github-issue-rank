@@ -293,14 +293,22 @@ var GitHubIssueRank = (function () {
             displayName: '# Votes',
             customComponent: LinkComponent,
             cssClassName: 'griddle-column-voteCount'
+          },
+          {
+            columnName: 'htmlUrl',
+            visible: false
           }
         ];
 
-        var columns = [
-          'number',
-          'title',
-          'voteCount'
-        ];
+        columnMetadata = _.each(columnMetadata, (md, i) => { md.order = i; })
+
+        var columns =_.chain(columnMetadata)
+          .sortBy('order')
+          .filter((md) => {
+            return md.visible == null ? true : false;
+          })
+          .pluck('columnName')
+          .value();
 
         return (
           <div>
