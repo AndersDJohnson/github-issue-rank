@@ -41,7 +41,7 @@ class OctokatCacheHandler {
     try {
       this.storage.setItem(key, cached);
     } catch (e) {
-      console.error(e);
+      console.warn(e);
     }
   }
 };
