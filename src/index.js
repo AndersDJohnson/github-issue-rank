@@ -6,7 +6,7 @@ import _ from 'lodash';
 // import OAuth from 'oauthio';
 // import OAuth from '../bower_components/oauth-js/dist/oauth.js';
 import {OctokatCacheHandler} from './octokat-cache-handler';
-import {fetchAll} from './octokat-fetch-all';
+import {OctokatHelper} from './octokat-helper';
 import Griddle from 'griddle-react';
 import Loader from 'react-loader';
 import { Router, Route, Link } from 'react-router';
@@ -36,6 +36,7 @@ var GitHubIssueRank = (function () {
 
 
   var octokat;
+  var octokatHelper;
   var githubAccessToken;
 
 
@@ -81,7 +82,7 @@ var GitHubIssueRank = (function () {
 
   var showRepo = function (owner, repo, each, callback) {
 
-    getIssuesThenComments(
+    octokatHelper.getIssuesThenComments(
       owner,
       repo,
       function (err, results, cancel, issue, comments) {
@@ -369,6 +370,8 @@ var GitHubIssueRank = (function () {
             cacheHandler: octokatCacheHandler
           });
 
+          octokatHelper = new OctokatHelper(octokat);
+
           postAuth(options);
 
           out.render();
@@ -378,85 +381,6 @@ var GitHubIssueRank = (function () {
       });
   };
 
-
-  function getIssuesThenComments(owner, repo, eachIssueComments, done) {
-    done = done || function () {};
-
-    var cancelled = false;
-    var cancel = function () {
-      cancelled = true;
-    };
-
-    getIssues(
-      owner, repo,
-      function (err, issues) {
-        console.log(err, issues);
-
-        async.reduce(issues,
-          [],
-          function (memo, issue, cb) {
-            if (cancelled) {
-              cb(null, memo);
-              return;
-            }
-            var result = {
-              issue
-            };
-            if (issue.comments) {
-              getComments(
-                owner, repo, issue.number,
-                function (err, comments) {
-                  result.comments = comments;
-                  memo.push(result);
-                  eachIssueComments(err, memo, cancel, issue, comments);
-                  cb(err, memo);
-                }
-              );
-            }
-            else {
-              memo.push(result);
-              eachIssueComments(null, memo, issue, null);
-              cb(err, memo);
-            }
-          },
-          function (err, results) {
-            if (err) return done(err);
-            done(err, results);
-          }
-        );
-      }
-    );
-  };
-
-  function getComments(owner, repo, issue, done) {
-
-    var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
-
-    var requester = function (octokat) {
-      return octokat
-        .repos(owner, repo)
-        .issues(issue)
-        .comments
-        .fetch();
-    };
-
-    fetchAll(cacheKey, octokat, requester, done);
-  };
-
-
-  function getIssues(owner, repo, done) {
-
-    var cacheKey = 'issues:' + owner + '/' + repo;
-
-    var requester = function (octokat) {
-      return octokat
-        .repos(owner, repo)
-        .issues
-        .fetch();
-    };
-
-    fetchAll(cacheKey, octokat, requester, done);
-  };
 
   return out;
 
