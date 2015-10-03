@@ -318,7 +318,8 @@ var GitHubIssueRank = (function () {
                 results={this.state.rows}
                 columnMetadata={columnMetadata}
                 columns={columns}
-                resultsPerPage={25}
+                resultsPerPage={10}
+                showSettings={true}
               />
             </Loader>
           </div>
