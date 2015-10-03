@@ -306,7 +306,13 @@ var GitHubIssueRank = (function () {
 
         return (
           <div>
-            <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
+            <h2>
+              <a href={'https://github.com/' + this.props.params.owner + '/' + this.props.params.repo}
+                target="_blank"
+              >
+                {this.props.params.owner}/{this.props.params.repo}
+              </a>
+            </h2>
 
             <Loader loaded={this.state.loaded}>
               <div># issues: {this.state.rows.length}</div>
