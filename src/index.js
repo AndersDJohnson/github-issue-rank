@@ -79,23 +79,23 @@ var GitHubIssueRank = (function () {
   };
 
 
-  var showRepo = function (owner, repo, callback) {
+  var showRepo = function (owner, repo, each, callback) {
 
     getIssuesThenComments(
       owner,
       repo,
-      function (err, issue, comments) {
-        // console.log('eachIssueComment', issue, comments);
+      function (err, results, issue, comments) {
+        each(err, mapResultsToRows(results), issue, comments);
       },
       function (err, results) {
-        withIssuesAndComments(err, results, callback);
+        callback(err, mapResultsToRows(results));
       }
     );
 
   };
 
 
-  var withIssuesAndComments = function (err, results, callback) {
+  var mapResultsToRows = function (results) {
 
     results.forEach(function (result) {
       var voteCount = 0;
@@ -129,7 +129,7 @@ var GitHubIssueRank = (function () {
       });
     });
 
-    callback(err, rows);
+    return rows;
   };
 
 
@@ -251,14 +251,22 @@ var GitHubIssueRank = (function () {
         this.owner = owner;
         this.repo = repo;
 
-        showRepo(owner, repo, (err, rows) => {
-          if (! this.unmounting) {
-            this.setState({
-              rows,
-              loaded: true
-            });
-          }
-        });
+        showRepo(owner, repo,
+          (err, rows) => {
+            this.showRows(err, rows);
+          },
+          (err, rows) => {
+            this.showRows(err, rows);
+          });
+      },
+
+      showRows(err, rows) {
+        if (! this.unmounting) {
+          this.setState({
+            rows,
+            loaded: true
+          });
+        }
       },
 
       render() {
@@ -358,26 +366,27 @@ var GitHubIssueRank = (function () {
       function (err, issues) {
         console.log(err, issues);
         
-        async.map(issues,
-          function (issue, cb) {
-            if (issue.comments) {   
+        async.reduce(issues,
+          [],
+          function (memo, issue, cb) {
+            var result = {
+              issue
+            };
+            if (issue.comments) {
               getComments(
                 owner, repo, issue.number,
                 function (err, comments) {
-                  // console.log(err, comments);
-                  eachIssueComments(err, issue, comments);
-                  cb(err, {
-                    issue: issue,
-                    comments: comments
-                  });
+                  result.comments = comments;
+                  memo.push(result);
+                  eachIssueComments(err, memo, issue, comments);
+                  cb(err, memo);
                 }
               );
             }
             else {
-              eachIssueComments(null, issue, null);
-              cb(null, {
-                issue: issue
-              });
+              memo.push(result);
+              eachIssueComments(null, memo, issue, null);
+              cb(err, memo);
             }
           },
           function (err, results) {
