@@ -222,13 +222,11 @@ var GitHubIssueRank = (function () {
 
       componentDidUpdate() {
         this.unmounting = false;
-        console.log('RepoRoute update', arguments, this);
         this.showRepo();
       },
 
       componentDidMount() {
         this.unmounting = false;
-        console.log('RepoRoute mount');
         this.showRepo();
       },
 
