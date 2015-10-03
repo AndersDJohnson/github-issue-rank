@@ -84,8 +84,8 @@ var GitHubIssueRank = (function () {
     getIssuesThenComments(
       owner,
       repo,
-      function (err, results, issue, comments) {
-        each(err, mapResultsToRows(results), issue, comments);
+      function (err, results, cancel, issue, comments) {
+        each(err, mapResultsToRows(results), cancel, issue, comments);
       },
       function (err, results) {
         callback(err, mapResultsToRows(results));
@@ -237,25 +237,31 @@ var GitHubIssueRank = (function () {
         this.unmounting = true;
       },
 
+      sameState(owner, repo) {
+        return (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
+      },
+
       showRepo() {
         var params = this.props.params;
         var owner = params.owner;
         var repo = params.repo;
 
-        if (owner === this.owner && repo === this.repo) {
-          return;
-        }
+        if (this.sameState(owner, repo)) return;
 
-        this.setState({loaded: false});
-
-        this.owner = owner;
-        this.repo = repo;
+        this.setState({
+          loaded: false,
+          owner: owner,
+          repo: repo,
+          rows: []
+        });
 
         showRepo(owner, repo,
-          (err, rows) => {
+          (err, rows, cancel) => {
+            if ( ! this.sameState(owner, repo)) return cancel();
             this.showRows(err, rows);
           },
-          (err, rows) => {
+          (err, rows, cancel) => {
+            if ( ! this.sameState(owner, repo)) return cancel();
             this.showRows(err, rows);
           });
       },
@@ -361,14 +367,24 @@ var GitHubIssueRank = (function () {
 
   function getIssuesThenComments(owner, repo, eachIssueComments, done) {
     done = done || function () {};
+
+    var cancelled = false;
+    var cancel = function () {
+      cancelled = true;
+    };
+
     getIssues(
       owner, repo,
       function (err, issues) {
         console.log(err, issues);
-        
+
         async.reduce(issues,
           [],
           function (memo, issue, cb) {
+            if (cancelled) {
+              cb(null, memo);
+              return;
+            }
             var result = {
               issue
             };
@@ -378,7 +394,7 @@ var GitHubIssueRank = (function () {
                 function (err, comments) {
                   result.comments = comments;
                   memo.push(result);
-                  eachIssueComments(err, memo, issue, comments);
+                  eachIssueComments(err, memo, cancel, issue, comments);
                   cb(err, memo);
                 }
               );
