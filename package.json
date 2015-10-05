@@ -17,7 +17,8 @@
     "griddle-react": "~0.2.14",
     "lodash": "~3.10.1",
     "es6-promise": "~3.0.2",
-    "react-router": "~1.0.0-rc1"
+    "react-router": "~1.0.0-rc1",
+    "react-loader": "~1.4.0"
   },
   "devDependencies": {
     "babel": "^5.8.23",

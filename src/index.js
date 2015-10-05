@@ -6,8 +6,9 @@ import _ from 'lodash';
 // import OAuth from 'oauthio';
 // import OAuth from '../bower_components/oauth-js/dist/oauth.js';
 import {OctokatCacheHandler} from './octokat-cache-handler';
-import {fetchAll} from './octokat-fetch-all';
+import {OctokatHelper} from './octokat-helper';
 import Griddle from 'griddle-react';
+import Loader from 'react-loader';
 import { Router, Route, Link } from 'react-router';
 
 
@@ -33,8 +34,9 @@ var GitHubIssueRank = (function () {
   };
 
 
-
+  // TODO: Use a global promise to queue work until Octokat instantiated.
   var octokat;
+  var octokatHelper;
   var githubAccessToken;
 
 
@@ -46,6 +48,8 @@ var GitHubIssueRank = (function () {
 
 
   var getVoteCountForComment = function (comments) {
+
+    if (! comments) return 0;
 
     var voteCount = 0;
 
@@ -78,23 +82,51 @@ var GitHubIssueRank = (function () {
   };
 
 
-  var showRepo = function (owner, repo, callback) {
+  var showRepo = function (owner, repo, each, callback) {
 
-    getIssuesThenComments(
+    var merged = {};
+
+    var merge = function (results) {
+      if (! results) return results;
+      console.log('merge', results);
+      var keyed = _.chain(results)
+        .filter(r => r.issue)
+        .groupBy(r => r.issue.number)
+        .map(r => r[0])
+        .value();
+      _.extend(merged, keyed);
+      console.log('merged', results[0], merged);
+      return _.values(merged);
+    };
+
+    octokatHelper.getIssuesThenComments(
       owner,
       repo,
-      function (err, issue, comments) {
-        // console.log('eachIssueComment', issue, comments);
+      function (err, results, cancel) {
+        console.log('issues', arguments);
+        each(err, mapResultsToRows(merge(results)), cancel);
       },
-      function (err, results) {
-        withIssuesAndComments(err, results, callback);
+      function (err, results, cancel, issue) {
+        console.log('comments', arguments);
+        each(err, mapResultsToRows(merge(results)), cancel, issue);
+      },
+      function (err, results, cancel, issue, comments) {
+        console.log('issue comments', arguments);
+        each(err, mapResultsToRows(merge(results)), cancel, issue, comments);
+      },
+      (err, results) => {
+        callback(err, mapResultsToRows(merge(results)));
       }
     );
 
   };
 
 
-  var withIssuesAndComments = function (err, results, callback) {
+  var mapResultsToRows = function (results) {
+
+    if (! results) return;
+
+    console.log('mapResultsToRows', results);
 
     results.forEach(function (result) {
       var voteCount = 0;
@@ -128,20 +160,53 @@ var GitHubIssueRank = (function () {
       });
     });
 
-    callback(err, rows);
+    return rows;
   };
 
 
   out.render = function () {
     var AppRoute = React.createClass({
+
+      getInitialState() {
+        return {rateLimit: {}};
+      },
+
       componentDidMount() {
         console.log(this.props.params);
+
+        var checkRateLimit = () => {
+          if (!octokat) {
+            setTimeout(checkRateLimit, 2000);
+            return;
+          }
+          octokat.rateLimit.fetch().then(
+            (data) => {
+              var rateLimit = data.resources.core;
+              this.setState({rateLimit});
+              setTimeout(checkRateLimit, 2000);
+            },
+            () => {
+              console.error(arguments);
+            }
+          );
+        };
+        checkRateLimit();
       },
 
       render() {
         return (
           <div>
             <h1><Link to="/">GitHub Issue Rank</Link></h1>
+
+            <div>
+              <progress id="gh-api-limit"
+                title="API Requests Left"
+                value={this.state.rateLimit.remaining}
+                max={this.state.rateLimit.limit} />
+              <label for="gh-api-limit">
+                API Requests Left {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
+              </label>
+            </div>
 
             <ul>
               <li>
@@ -180,18 +245,19 @@ var GitHubIssueRank = (function () {
     var RepoRoute = React.createClass({
 
       getInitialState() {
-        return {rows:[]};
+        return {
+          rows:[],
+          loaded: false
+        };
       },
 
       componentDidUpdate() {
         this.unmounting = false;
-        console.log('RepoRoute update', arguments, this);
         this.showRepo();
       },
 
       componentDidMount() {
         this.unmounting = false;
-        console.log('RepoRoute mount');
         this.showRepo();
       },
 
@@ -200,23 +266,42 @@ var GitHubIssueRank = (function () {
         this.unmounting = true;
       },
 
+      sameState(owner, repo) {
+        return (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
+      },
+
       showRepo() {
         var params = this.props.params;
         var owner = params.owner;
         var repo = params.repo;
 
-        if (owner === this.owner && repo === this.repo) {
-          return;
-        }
+        if (this.sameState(owner, repo)) return;
 
-        this.owner = owner;
-        this.repo = repo;
-
-        showRepo(owner, repo, (err, rows) => {
-          if (! this.unmounting) {
-            this.setState({rows});
-          }
+        this.setState({
+          loaded: false,
+          owner: owner,
+          repo: repo,
+          rows: []
         });
+
+        showRepo(owner, repo,
+          (err, rows, cancel) => {
+            if ( ! this.sameState(owner, repo)) return cancel();
+            this.showRows(err, rows);
+          },
+          (err, rows, cancel) => {
+            if ( ! this.sameState(owner, repo)) return cancel();
+            this.showRows(err, rows);
+          });
+      },
+
+      showRows(err, rows) {
+        if (! this.unmounting) {
+          this.setState({
+            rows,
+            loaded: true
+          });
+        }
       },
 
       render() {
@@ -239,25 +324,43 @@ var GitHubIssueRank = (function () {
             displayName: '# Votes',
             customComponent: LinkComponent,
             cssClassName: 'griddle-column-voteCount'
+          },
+          {
+            columnName: 'htmlUrl',
+            visible: false
           }
         ];
 
-        var columns = [
-          'number',
-          'title',
-          'voteCount'
-        ];
+        columnMetadata = _.each(columnMetadata, (md, i) => { md.order = i; })
+
+        var columns =_.chain(columnMetadata)
+          .sortBy('order')
+          .filter((md) => {
+            return md.visible == null ? true : false;
+          })
+          .pluck('columnName')
+          .value();
 
         return (
           <div>
-            <h2>{this.props.params.owner}/{this.props.params.repo}</h2>
+            <h2>
+              <a href={'https://github.com/' + this.props.params.owner + '/' + this.props.params.repo}
+                target="_blank"
+              >
+                {this.props.params.owner}/{this.props.params.repo}
+              </a>
+            </h2>
 
-            <Griddle
-              results={this.state.rows}
-              columnMetadata={columnMetadata}
-              columns={columns}
-              resultsPerPage={25}
-            />
+            <Loader loaded={this.state.loaded}>
+              <div># issues: {this.state.rows.length}</div>
+              <Griddle
+                results={this.state.rows}
+                columnMetadata={columnMetadata}
+                columns={columns}
+                resultsPerPage={10}
+                showSettings={true}
+              />
+            </Loader>
           </div>
         )
       }
@@ -297,6 +400,8 @@ var GitHubIssueRank = (function () {
             cacheHandler: octokatCacheHandler
           });
 
+          octokatHelper = new OctokatHelper(octokat);
+
           postAuth(options);
 
           out.render();
@@ -306,74 +411,6 @@ var GitHubIssueRank = (function () {
       });
   };
 
-
-  function getIssuesThenComments(owner, repo, eachIssueComments, done) {
-    done = done || function () {};
-    getIssues(
-      owner, repo,
-      function (err, issues) {
-        console.log(err, issues);
-        
-        async.map(issues,
-          function (issue, cb) {
-            if (issue.comments) {   
-              getComments(
-                owner, repo, issue.number,
-                function (err, comments) {
-                  // console.log(err, comments);
-                  eachIssueComments(err, issue, comments);
-                  cb(err, {
-                    issue: issue,
-                    comments: comments
-                  });
-                }
-              );
-            }
-            else {
-              eachIssueComments(null, issue, null);
-              cb(null, {
-                issue: issue
-              });
-            }
-          },
-          function (err, results) {
-            if (err) return done(err);
-            done(err, results);
-          }
-        );
-      }
-    );
-  };
-
-  function getComments(owner, repo, issue, done) {
-
-    var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
-
-    var requester = function (octokat) {
-      return octokat
-        .repos(owner, repo)
-        .issues(issue)
-        .comments
-        .fetch();
-    };
-
-    fetchAll(cacheKey, octokat, requester, done);
-  };
-
-
-  function getIssues(owner, repo, done) {
-
-    var cacheKey = 'issues:' + owner + '/' + repo;
-
-    var requester = function (octokat) {
-      return octokat
-        .repos(owner, repo)
-        .issues
-        .fetch();
-    };
-
-    fetchAll(cacheKey, octokat, requester, done);
-  };
 
   return out;
 
