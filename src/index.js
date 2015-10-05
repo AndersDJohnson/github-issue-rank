@@ -49,6 +49,8 @@ var GitHubIssueRank = (function () {
 
   var getVoteCountForComment = function (comments) {
 
+    if (! comments) return 0;
+
     var voteCount = 0;
 
     var alreadyUsers = {};
@@ -82,14 +84,38 @@ var GitHubIssueRank = (function () {
 
   var showRepo = function (owner, repo, each, callback) {
 
+    var merged = {};
+
+    var merge = function (results) {
+      if (! results) return results;
+      console.log('merge', results);
+      var keyed = _.chain(results)
+        .filter(r => r.issue)
+        .groupBy(r => r.issue.number)
+        .map(r => r[0])
+        .value();
+      _.extend(merged, keyed);
+      console.log('merged', results[0], merged);
+      return _.values(merged);
+    };
+
     octokatHelper.getIssuesThenComments(
       owner,
       repo,
-      function (err, results, cancel, issue, comments) {
-        each(err, mapResultsToRows(results), cancel, issue, comments);
+      function (err, results, cancel) {
+        console.log('issues', arguments);
+        each(err, mapResultsToRows(merge(results)), cancel);
       },
-      function (err, results) {
-        callback(err, mapResultsToRows(results));
+      function (err, results, cancel, issue) {
+        console.log('comments', arguments);
+        each(err, mapResultsToRows(merge(results)), cancel, issue);
+      },
+      function (err, results, cancel, issue, comments) {
+        console.log('issue comments', arguments);
+        each(err, mapResultsToRows(merge(results)), cancel, issue, comments);
+      },
+      (err, results) => {
+        callback(err, mapResultsToRows(merge(results)));
       }
     );
 
@@ -97,6 +123,10 @@ var GitHubIssueRank = (function () {
 
 
   var mapResultsToRows = function (results) {
+
+    if (! results) return;
+
+    console.log('mapResultsToRows', results);
 
     results.forEach(function (result) {
       var voteCount = 0;

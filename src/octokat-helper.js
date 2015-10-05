@@ -5,7 +5,7 @@ class OctokatHelper {
     this.octokat = octokat;
   }
 
-  getComments(owner, repo, issue, done) {
+  getComments(owner, repo, issue, each, done) {
     var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
 
     var requester = () => {
@@ -16,10 +16,10 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, done);
+    this.fetchAll(cacheKey, requester, each, done);
   }
 
-  getIssues(owner, repo, done) {
+  getIssues(owner, repo, each, done) {
     var cacheKey = 'issues:' + owner + '/' + repo;
 
     var requester = () => {
@@ -29,10 +29,12 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, done);
+    this.fetchAll(cacheKey, requester, each, done);
   }
 
-  getIssuesThenComments(owner, repo, each, done) {
+  getIssuesThenComments(
+    owner, repo, eachIssues, eachComments, eachIssueComments, done
+  ) {
     done = done || () => {};
 
     var cancelled = false;
@@ -42,9 +44,11 @@ class OctokatHelper {
 
     this.getIssues(
       owner, repo,
+      function (err, issues) {
+        issues = issues.map(issue => ({issue}));
+        eachIssues(err, issues, cancel);
+      },
       (err, issues) => {
-        console.log(err, issues);
-
         async.reduce(issues,
           [],
           (memo, issue, cb) => {
@@ -58,17 +62,23 @@ class OctokatHelper {
             if (issue.comments) {
               this.getComments(
                 owner, repo, issue.number,
+                function (err, data) {
+                  var d2 = data.map(issue => ({issue}));
+                  eachComments(err, data, cancel, issue);
+                },
                 (err, comments) => {
                   result.comments = comments;
                   memo.push(result);
-                  each(err, memo, cancel, issue, comments);
+                  var m2 = memo.map(issue => ({issue}));
+                  eachIssueComments(err, m2, cancel, issue, comments);
                   cb(err, memo);
                 }
               );
             }
             else {
               memo.push(result);
-              each(null, memo, issue, null);
+              var m2 = memo.map(issue => ({issue}));
+              eachComments(null, m2, cancel, issue, null);
               cb(err, memo);
             }
           },
@@ -81,7 +91,7 @@ class OctokatHelper {
     );
   }
 
-  fetchAll(cacheKey, requester, done) {
+  fetchAll(cacheKey, requester, each, done) {
     var octokat = this.octokat;
     var promiser = () => { return requester(); };
     var allData = [];
@@ -91,10 +101,12 @@ class OctokatHelper {
         promiser().then(
           function (data) {
             allData = allData.concat(data);
+            each(null, allData);
             promiser = data.nextPage;
             cb();
           },
           function (err) {
+            each(err);
             cb(err);
           }
         );
