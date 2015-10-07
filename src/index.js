@@ -154,7 +154,7 @@ var GitHubIssueRank = (function () {
         number: issue.number||'',
         title: issue.title||'',
         htmlUrl: issue.htmlUrl||'',
-        voteCount: voteCount ||'',
+        voteCount: voteCount ||''
         // comments: issue.comments||'',
         // ratio:ratio ||''
       });
