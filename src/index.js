@@ -265,10 +265,12 @@ var GitHubIssueRank = (function () {
       componentWillUnmount () {
         // allows us to ignore an inflight request in scenario 4
         this.unmounting = true;
+        this.owner = null;
+        this.repo = null;
       },
 
       sameState(owner, repo) {
-        return (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
+        return (! this.unmounting) && (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
       },
 
       showRepo() {
