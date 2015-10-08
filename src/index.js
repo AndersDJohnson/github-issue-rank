@@ -154,7 +154,7 @@ var GitHubIssueRank = (function () {
         number: issue.number||'',
         title: issue.title||'',
         htmlUrl: issue.htmlUrl||'',
-        voteCount: voteCount ||'',
+        voteCount: voteCount ||''
         // comments: issue.comments||'',
         // ratio:ratio ||''
       });
@@ -247,7 +247,8 @@ var GitHubIssueRank = (function () {
       getInitialState() {
         return {
           rows:[],
-          loaded: false
+          loaded: false,
+          anyLoaded: false
         };
       },
 
@@ -288,18 +289,23 @@ var GitHubIssueRank = (function () {
           (err, rows, cancel) => {
             if ( ! this.sameState(owner, repo)) return cancel();
             this.showRows(err, rows);
+            this.setState({
+              anyLoaded: true
+            });
           },
           (err, rows, cancel) => {
             if ( ! this.sameState(owner, repo)) return cancel();
             this.showRows(err, rows);
+            this.setState({
+              loaded: true
+            });
           });
       },
 
       showRows(err, rows) {
         if (! this.unmounting) {
           this.setState({
-            rows,
-            loaded: true
+            rows
           });
         }
       },
@@ -351,7 +357,9 @@ var GitHubIssueRank = (function () {
               </a>
             </h2>
 
-            <Loader loaded={this.state.loaded}>
+            <Loader loaded={this.state.loaded}></Loader>
+
+            <Loader loaded={this.state.anyLoaded}>
               <div># issues: {this.state.rows.length}</div>
               <Griddle
                 results={this.state.rows}

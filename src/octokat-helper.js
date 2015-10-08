@@ -59,25 +59,23 @@ class OctokatHelper {
             var result = {
               issue
             };
+            var m2 = () => {};
             if (issue.comments) {
               this.getComments(
                 owner, repo, issue.number,
-                function (err, data) {
-                  var d2 = data.map(issue => ({issue}));
-                  eachComments(err, data, cancel, issue);
-                },
                 (err, comments) => {
                   result.comments = comments;
                   memo.push(result);
-                  var m2 = memo.map(issue => ({issue}));
-                  eachIssueComments(err, m2, cancel, issue, comments);
+                  eachComments(err, memo, cancel, issue);
+                },
+                (err, comments) => {
+                  result.comments = comments;
+                  eachIssueComments(err, memo, cancel, issue);
                   cb(err, memo);
                 }
               );
             }
             else {
-              memo.push(result);
-              var m2 = memo.map(issue => ({issue}));
               eachComments(null, m2, cancel, issue, null);
               cb(err, memo);
             }
