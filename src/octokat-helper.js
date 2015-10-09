@@ -63,14 +63,22 @@ class OctokatHelper {
             if (issue.comments) {
               this.getComments(
                 owner, repo, issue.number,
-                (err, comments) => {
+                (err, comments, cancel2) => {
+                  var cancel1and2 = () => {
+                    cancel();
+                    cancel2();
+                  };
                   result.comments = comments;
                   memo.push(result);
-                  eachComments(err, memo, cancel, issue);
+                  eachComments(err, memo, cancel1and2, issue);
                 },
-                (err, comments) => {
+                (err, comments, cancel2) => {
+                  var cancel1and2 = () => {
+                    cancel();
+                    cancel2();
+                  };
                   result.comments = comments;
-                  eachIssueComments(err, memo, cancel, issue);
+                  eachIssueComments(err, memo, cancel1and2, issue);
                   cb(err, memo);
                 }
               );
@@ -82,7 +90,7 @@ class OctokatHelper {
           },
           (err, results) => {
             if (err) return done(err);
-            done(err, results);
+            done(err, results, cancel);
           }
         );
       }
@@ -94,18 +102,23 @@ class OctokatHelper {
     var promiser = () => { return requester(); };
     var allData = [];
 
+    var cancelled = false;
+    var cancel = () => {
+      cancelled = true;
+    };
+
     async.doWhilst(
       function (cb) {
         promiser().then(
           function (data) {
             allData = allData.concat(data);
-            each(null, allData);
+            each(null, allData, cancel);
             promiser = data.nextPage;
             cb();
           },
           function (err) {
-            each(err);
-            cb(err);
+            each(err, null, cancel);
+            cb(err, null, cancel);
           }
         );
       },
@@ -115,7 +128,7 @@ class OctokatHelper {
       function (err) {
         if (err) throw err;
 
-        done(err, allData);
+        done(err, allData, cancel);
       }
     );
   }
