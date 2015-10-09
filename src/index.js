@@ -114,8 +114,8 @@ var GitHubIssueRank = (function () {
         console.log('issue comments', arguments);
         each(err, mapResultsToRows(merge(results)), cancel, issue, comments);
       },
-      (err, results) => {
-        callback(err, mapResultsToRows(merge(results)));
+      (err, results, cancel) => {
+        callback(err, mapResultsToRows(merge(results)), cancel);
       }
     );
 
