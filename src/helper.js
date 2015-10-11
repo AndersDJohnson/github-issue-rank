@@ -20,12 +20,7 @@ export var hasVote = function (str) {
 };
 
 
-var withComments = function (comments) {
-  getVoteCountForComments(comments);
-};
-
-
-var mapCommentsHaveVotes = function (comments) {
+export var mapCommentsHaveVotes = function (comments) {
   return comments.map(c => {
     c.hasVote = hasVote(c.body);
     return c;
@@ -33,7 +28,7 @@ var mapCommentsHaveVotes = function (comments) {
 };
 
 
-var getVoteCountForComments = function (comments) {
+export var getVoteCountForComments = function (comments) {
 
   if (! comments) return 0;
 
@@ -98,7 +93,7 @@ export var showRepo = function (owner, repo, each, callback) {
 };
 
 
-var mapResultsToRows = function (results) {
+export var mapResultsToRows = function (results) {
 
   if (! results) return;
 
