@@ -23,6 +23,7 @@ export default class Auth {
 
   static check(params) {
     var options = assign({}, Options, params);
+    console.log('check auth', options);
 
     var githubAccessToken = localStorage.getItem(cacheKey, githubAccessToken);
 
@@ -32,7 +33,7 @@ export default class Auth {
       return this.withToken(githubAccessToken);
     }
 
-    if (options.noAnonymous) {
+    if (! options.noAnonymous) {
       return this.anonymous();
     }
 
@@ -50,7 +51,7 @@ export default class Auth {
       noAnonymous: true
     });
 
-    return this.check(params).then(
+    return this.check(options).then(
       (result => {
         console.log('result', result);
 
