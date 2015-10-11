@@ -199,6 +199,22 @@ var GitHubIssueRank = (function () {
       },
 
       render() {
+
+        var children = this.props.children;
+
+        if (! children) {
+          children = (
+            <ul>
+              <li>
+                <Link to="/oauth-io/oauth-js">oauth-io/oauth-js</Link>
+              </li>
+              <li>
+                <Link to="/isaacs/github">isaacs/github</Link>
+              </li>
+            </ul>
+          );
+        }
+
         return (
           <div>
             <h1><Link to="/">GitHub Issue Rank</Link></h1>
@@ -214,16 +230,7 @@ var GitHubIssueRank = (function () {
               </label>
             </div>
 
-            <ul>
-              <li>
-                <Link to="/oauth-io/oauth-js">oauth-io/oauth-js</Link>
-              </li>
-              <li>
-                <Link to="/isaacs/github">isaacs/github</Link>
-              </li>
-            </ul>
-
-            {this.props.children}
+            {children}
           </div>
         )
       }
