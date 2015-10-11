@@ -17,6 +17,7 @@ class OctokatHelper {
     };
 
     this.fetchAll(cacheKey, requester, (err, data, cancel) => {
+      if (err) return done(err);
       data.forEach(d => {
         d.owner = owner;
         d.repo = repo;
@@ -36,6 +37,7 @@ class OctokatHelper {
     };
 
     this.fetchAll(cacheKey, requester, (err, data, cancel) => {
+      if (err) return done(err);
       data.forEach(d => {
         d.owner = owner;
         d.repo = repo;
@@ -57,10 +59,12 @@ class OctokatHelper {
     this.getIssues(
       owner, repo,
       function (err, issues) {
+        if (err) return done(err);
         issues = issues.map(issue => ({issue}));
         eachIssues(err, issues, cancel);
       },
       (err, issues) => {
+        if (err) return done(err);
         async.reduce(issues,
           [],
           (memo, issue, cb) => {
@@ -76,6 +80,7 @@ class OctokatHelper {
               this.getComments(
                 owner, repo, issue.number,
                 (err, comments, cancel2) => {
+                  if (err) return done(err);
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
@@ -85,6 +90,7 @@ class OctokatHelper {
                   eachComments(err, memo, cancel1and2, issue);
                 },
                 (err, comments, cancel2) => {
+                  if (err) return done(err);
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
@@ -101,7 +107,7 @@ class OctokatHelper {
             }
           },
           (err, results) => {
-            if (err) return done(err);
+            // if (err) return done(err);
             done(err, results, cancel);
           }
         );
@@ -129,6 +135,7 @@ class OctokatHelper {
             cb();
           },
           function (err) {
+            if (err) return cb(err);
             each(err, null, cancel);
             cb(err, null, cancel);
           }
@@ -138,7 +145,7 @@ class OctokatHelper {
         return promiser;
       },
       function (err) {
-        if (err) throw err;
+        if (err) return done(err);
 
         done(err, allData, cancel);
       }
