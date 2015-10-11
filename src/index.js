@@ -170,7 +170,11 @@ var GitHubIssueRank = (function () {
       getInitialState() {
         return {
           rateLimit: {},
-          reset: new Date()
+          reset: new Date(),
+          repos: [
+            'oauth-io/oauth-js',
+            'isaacs/github'
+          ]
         };
       },
 
@@ -205,12 +209,13 @@ var GitHubIssueRank = (function () {
         if (! children) {
           children = (
             <ul>
-              <li>
-                <Link to="/oauth-io/oauth-js">oauth-io/oauth-js</Link>
-              </li>
-              <li>
-                <Link to="/isaacs/github">isaacs/github</Link>
-              </li>
+              {this.state.repos.map(r => {
+                return (
+                  <li>
+                    <Link to={'/' + r}>{r}</Link>
+                  </li>
+                );
+              })}
             </ul>
           );
         }
