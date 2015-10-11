@@ -276,12 +276,58 @@ var GitHubIssueRank = (function () {
     class RepoRoute extends React.Component {
       constructor(props) {
         super(props);
+
+        var columnMetadata = [
+          {
+            columnName: 'number',
+            displayName: '#',
+            customComponent: IssueNumberComponent,
+            cssClassName: 'griddle-column-number'
+          },
+          {
+            columnName: 'title',
+            displayName: 'Title',
+            customComponent: LinkComponent,
+            cssClassName: 'griddle-column-title'
+          },
+          {
+            columnName: 'voteCount',
+            displayName: '# Votes',
+            customComponent: LinkComponent,
+            cssClassName: 'griddle-column-voteCount'
+          },
+          {
+            columnName: 'owner',
+            visible: false
+          },
+          {
+            columnName: 'repo',
+            visible: false
+          },
+          {
+            columnName: 'htmlUrl',
+            visible: false
+          }
+        ];
+
+        columnMetadata = _.each(columnMetadata, (md, i) => { md.order = i; })
+
+        var columns =_.chain(columnMetadata)
+          .sortBy('order')
+          .filter((md) => {
+            return md.visible == null ? true : false;
+          })
+          .pluck('columnName')
+          .value();
+
         this.state = {
           owner: null,
           repo: null,
-          rows:[],
+          rows: [],
           loaded: false,
-          anyLoaded: false
+          anyLoaded: false,
+          columnMetadata,
+          columns
         };
       }
 
@@ -346,49 +392,6 @@ var GitHubIssueRank = (function () {
       render() {
         var {owner, repo} = this.props.params;
 
-        var columnMetadata = [
-          {
-            columnName: 'number',
-            displayName: '#',
-            customComponent: IssueNumberComponent,
-            cssClassName: 'griddle-column-number'
-          },
-          {
-            columnName: 'title',
-            displayName: 'Title',
-            customComponent: LinkComponent,
-            cssClassName: 'griddle-column-title'
-          },
-          {
-            columnName: 'voteCount',
-            displayName: '# Votes',
-            customComponent: LinkComponent,
-            cssClassName: 'griddle-column-voteCount'
-          },
-          {
-            columnName: 'owner',
-            visible: false
-          },
-          {
-            columnName: 'repo',
-            visible: false
-          },
-          {
-            columnName: 'htmlUrl',
-            visible: false
-          }
-        ];
-
-        columnMetadata = _.each(columnMetadata, (md, i) => { md.order = i; })
-
-        var columns =_.chain(columnMetadata)
-          .sortBy('order')
-          .filter((md) => {
-            return md.visible == null ? true : false;
-          })
-          .pluck('columnName')
-          .value();
-
         return (
           <div className="ghir-route-repo">
             <h2>
@@ -409,8 +412,8 @@ var GitHubIssueRank = (function () {
               <div># issues: {this.state.rows.length}</div>
               <Griddle
                 results={this.state.rows}
-                columnMetadata={columnMetadata}
-                columns={columns}
+                columnMetadata={this.state.columnMetadata}
+                columns={this.state.columns}
                 resultsPerPage={10}
                 showSettings={true}
               />
