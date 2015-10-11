@@ -416,6 +416,7 @@ var GitHubIssueRank = (function () {
                 columns={this.state.columns}
                 resultsPerPage={10}
                 showSettings={true}
+                showFilter={true}
               />
             </Loader>
           </div>
