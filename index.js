@@ -43,11 +43,19 @@ var GitHubIssueRank = (function () {
 
 
   var withComments = function (comments) {
-    getVoteCountForComment(comments);
+    getVoteCountForComments(comments);
   };
 
 
-  var getVoteCountForComment = function (comments) {
+  var mapCommentsHaveVotes = function (comments) {
+    return comments.map(c => {
+      c.hasVote = hasVote(c.body);
+      return c;
+    });
+  };
+
+
+  var getVoteCountForComments = function (comments) {
 
     if (! comments) return 0;
 
@@ -55,20 +63,18 @@ var GitHubIssueRank = (function () {
 
     var alreadyUsers = {};
 
-    comments.forEach(function (comment) {
-      var body = comment.body;
+    comments = mapCommentsHaveVotes(comments);
 
-      var login = comment.user.login;
+    comments.forEach(c => {
+
+      var login = c.user.login;
 
       if (alreadyUsers[login]) {
         return;
       }
 
-      var thisHasVote = hasVote(body);
-      if (thisHasVote) {
-
+      if (c.hasVote) {
         alreadyUsers[login] = true;
-
         voteCount += 1;
       }
     });
@@ -88,14 +94,12 @@ var GitHubIssueRank = (function () {
 
     var merge = function (results) {
       if (! results) return results;
-      console.log('merge', results);
       var keyed = _.chain(results)
         .filter(r => r.issue)
         .groupBy(r => r.issue.number)
         .map(r => r[0])
         .value();
       _.extend(merged, keyed);
-      console.log('merged', results[0], merged);
       return _.values(merged);
     };
 
@@ -103,15 +107,12 @@ var GitHubIssueRank = (function () {
       owner,
       repo,
       function (err, results, cancel) {
-        console.log('issues', arguments);
         each(err, mapResultsToRows(merge(results)), cancel);
       },
       function (err, results, cancel, issue) {
-        console.log('comments', arguments);
         each(err, mapResultsToRows(merge(results)), cancel, issue);
       },
       function (err, results, cancel, issue, comments) {
-        console.log('issue comments', arguments);
         each(err, mapResultsToRows(merge(results)), cancel, issue, comments);
       },
       (err, results, cancel) => {
@@ -126,12 +127,10 @@ var GitHubIssueRank = (function () {
 
     if (! results) return;
 
-    console.log('mapResultsToRows', results);
-
     results.forEach(function (result) {
       var voteCount = 0;
       if (result.comments) {
-        voteCount = getVoteCountForComment(result.comments);
+        voteCount = getVoteCountForComments(result.comments);
       }
       result.voteCount = voteCount;
     });
@@ -151,10 +150,12 @@ var GitHubIssueRank = (function () {
       // var ratio = voteCount / issue.comments;
 
       rows.push({
-        number: issue.number||'',
-        title: issue.title||'',
-        htmlUrl: issue.htmlUrl||'',
-        voteCount: voteCount ||''
+        number: issue.number || '',
+        title: issue.title || '',
+        htmlUrl: issue.htmlUrl || '',
+        owner: issue.owner || '',
+        repo: issue.repo || '',
+        voteCount: voteCount || ''
         // comments: issue.comments||'',
         // ratio:ratio ||''
       });
@@ -165,15 +166,20 @@ var GitHubIssueRank = (function () {
 
 
   out.render = function () {
-    var AppRoute = React.createClass({
-
-      getInitialState() {
-        return {rateLimit: {}};
-      },
+    class AppRoute extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          rateLimit: {},
+          reset: new Date(),
+          repos: [
+            'oauth-io/oauth-js',
+            'isaacs/github'
+          ]
+        };
+      }
 
       componentDidMount() {
-        console.log(this.props.params);
-
         var checkRateLimit = () => {
           if (!octokat) {
             setTimeout(checkRateLimit, 2000);
@@ -182,7 +188,10 @@ var GitHubIssueRank = (function () {
           octokat.rateLimit.fetch().then(
             (data) => {
               var rateLimit = data.resources.core;
-              this.setState({rateLimit});
+              var reset = data.resources.core.reset;
+              var date = new Date(reset*1000);
+              var state = {rateLimit, reset: date};
+              this.setState(state);
               setTimeout(checkRateLimit, 2000);
             },
             () => {
@@ -191,92 +200,114 @@ var GitHubIssueRank = (function () {
           );
         };
         checkRateLimit();
-      },
+      }
 
       render() {
+        var children = this.props.children;
+
+        if (! children) {
+          children = (
+            <ul>
+              {this.state.repos.map(r => {
+                return (
+                  <li>
+                    <Link to={'/' + r}>{r}</Link>
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        }
+
         return (
           <div>
             <h1><Link to="/">GitHub Issue Rank</Link></h1>
 
             <div>
               <progress id="gh-api-limit"
-                title="API Requests Left"
+                title="API Limit"
                 value={this.state.rateLimit.remaining}
                 max={this.state.rateLimit.limit} />
-              <label for="gh-api-limit">
-                API Requests Left {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
+              <label htmlFor="gh-api-limit">
+                API Limit {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
+                &nbsp;(resets {this.state.reset.toString()})
               </label>
             </div>
 
-            <ul>
-              <li>
-                <Link to="/oauth-io/oauth-js">/oauth-io/oauth-js</Link>
-              </li>
-              <li>
-                <Link to="/isaacs/github">/isaacs/github</Link>
-              </li>
-            </ul>
-
-            {this.props.children}
+            {children}
           </div>
         )
       }
-    });
+    };
 
 
-    var NoRoute = React.createClass({
+    class NoRoute extends React.Component {
       componentDidMount() {
         console.log(this.props.params);
-      },
+      }
 
       render() {
         return (
           <h1>404</h1>
         )
       }
-    });
+    };
 
-    var LinkComponent = React.createClass({
-      render: function () {
-        return <a href={this.props.rowData.htmlUrl} target="_blank">{this.props.data}</a>;
+
+    class LinkComponent extends React.Component {
+      render() {
+        var data = this.data();
+        var {owner, repo, number} = this.props.rowData;
+        var href = '/' + owner + '/' + repo + '/' + number;
+        return <Link to={href} target="_blank">{data}</Link>;
       }
-    });
+      data() {
+        return this.props.data;
+      }
+    };
 
-    var RepoRoute = React.createClass({
+    class IssueNumberComponent extends LinkComponent {
+      data() {
+        var data = this.props.data;
+        return data ? '#' + data : '';
+      }
+    };
 
-      getInitialState() {
-        return {
+    class RepoRoute extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          owner: null,
+          repo: null,
           rows:[],
           loaded: false,
           anyLoaded: false
         };
-      },
+      }
 
       componentDidUpdate() {
         this.unmounting = false;
         this.showRepo();
-      },
+      }
 
       componentDidMount() {
         this.unmounting = false;
         this.showRepo();
-      },
+      }
 
       componentWillUnmount () {
         // allows us to ignore an inflight request in scenario 4
         this.unmounting = true;
         this.owner = null;
         this.repo = null;
-      },
+      }
 
       sameState(owner, repo) {
         return (! this.unmounting) && (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
-      },
+      }
 
       showRepo() {
-        var params = this.props.params;
-        var owner = params.owner;
-        var repo = params.repo;
+        var {owner, repo} = this.props.params;
 
         if (this.sameState(owner, repo)) return;
 
@@ -302,7 +333,7 @@ var GitHubIssueRank = (function () {
               loaded: true
             });
           });
-      },
+      }
 
       showRows(err, rows) {
         if (! this.unmounting) {
@@ -310,15 +341,16 @@ var GitHubIssueRank = (function () {
             rows
           });
         }
-      },
+      }
 
       render() {
+        var {owner, repo} = this.props.params;
 
-          var columnMetadata = [
+        var columnMetadata = [
           {
             columnName: 'number',
             displayName: '#',
-            customComponent: LinkComponent,
+            customComponent: IssueNumberComponent,
             cssClassName: 'griddle-column-number'
           },
           {
@@ -332,6 +364,14 @@ var GitHubIssueRank = (function () {
             displayName: '# Votes',
             customComponent: LinkComponent,
             cssClassName: 'griddle-column-voteCount'
+          },
+          {
+            columnName: 'owner',
+            visible: false
+          },
+          {
+            columnName: 'repo',
+            visible: false
           },
           {
             columnName: 'htmlUrl',
@@ -350,12 +390,16 @@ var GitHubIssueRank = (function () {
           .value();
 
         return (
-          <div>
+          <div className="ghir-route-repo">
             <h2>
-              <a href={'https://github.com/' + this.props.params.owner + '/' + this.props.params.repo}
+              <Link to={'/' + owner + '/' + repo}>
+                {owner}/{repo}
+              </Link>
+              <a href={'https://github.com/' + owner + '/' + repo}
                 target="_blank"
+                className="ghir-link-github"
               >
-                {this.props.params.owner}/{this.props.params.repo}
+                <i className="fa fa-github"></i>
               </a>
             </h2>
 
@@ -374,13 +418,114 @@ var GitHubIssueRank = (function () {
           </div>
         )
       }
-    });
+    };
+
+
+    class IssueRoute extends React.Component {
+
+      constructor(props) {
+        super(props);
+        this.state = {
+          owner: null,
+          repo: null,
+          number: null,
+          issue: {},
+          comments: [],
+          commentsWithVotes: [],
+          loaded: false
+        };
+      }
+
+      componentDidMount() {
+        this.unmounting = false;
+        this.showComments();
+      }
+
+      showComments() {
+        var {owner, repo, number} = this.props.params;
+
+        octokat
+          .repos(owner, repo)
+          .issues(number)
+          .fetch()
+          .then((issue) => {
+            // console.log('issue', issue);
+            this.setState({issue});
+          }, (err) => {
+            console.error(err);
+          });
+
+        octokatHelper.getComments(
+          owner, repo, number,
+          (err, comments, cancel) => {
+            // console.log('each', err, comments, cancel);
+            comments = mapCommentsHaveVotes(comments);
+            this.setState({comments});
+            var commentsWithVotes = comments.filter(c => {
+              return c.hasVote;
+            });
+            this.setState({commentsWithVotes});
+          },
+          (err, comments) => {
+            // console.log('done', comments);
+          }
+        );
+      }
+
+      render() {
+        var {owner, repo, number} = this.props.params;
+        return (
+          <div className="ghir-route-issue">
+            <h2>
+              <Link to={'/' + owner + '/' + repo}>
+                {owner}/{repo}
+              </Link>
+              <a href={'https://github.com/' + owner + '/' + repo}
+                target="_blank"
+                className="ghir-link-github"
+              >
+                <i className="fa fa-github"></i>
+              </a>
+              &nbsp;
+              <Link to={'/' + owner + '/' + repo + '/' + number}>
+                #{number}
+              </Link>
+              <a href={'https://github.com/' + owner + '/' + repo
+                + '/issues/' + number}
+                target="_blank"
+                className="ghir-link-github"
+              >
+                <i className="fa fa-github"></i>
+              </a>
+            </h2>
+
+            <h3>
+              {this.state.issue.title}
+            </h3>
+
+            <ul className="ghir-issue-votes list-unstyled list-inline">
+              {this.state.commentsWithVotes.map(c => {
+                return (
+                  <li key={c.id} className="ghir-issue-vote">
+                    <a href={c.htmlUrl} target="_blank">
+                      <img className="ghir-issue-vote-avatar"
+                        src={c.user.avatarUrl + '&s=32'} />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      }
+    };
 
 
     React.render((
       <Router>
         <Route path="/" component={AppRoute}>
           <Route path=":owner/:repo" component={RepoRoute}/>
+          <Route path=":owner/:repo/:number" component={IssueRoute}/>
           <Route path="*" component={NoRoute}/>
         </Route>
       </Router>
