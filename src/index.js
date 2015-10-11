@@ -254,11 +254,22 @@ var GitHubIssueRank = (function () {
       }
     });
 
-    var LinkComponent = React.createClass({
-      render: function () {
-        return <a href={this.props.rowData.htmlUrl} target="_blank">{this.props.data}</a>;
+    class LinkComponent {
+      render() {
+        var data = this.data();
+        return <a href={this.props.rowData.htmlUrl} target="_blank">{data}</a>;
       }
-    });
+      data() {
+        return this.props.data;
+      }
+    };
+
+    class IssueNumberComponent extends LinkComponent {
+      data() {
+        var data = this.props.data;
+        return data ? '#' + data : '';
+      }
+    };
 
     var RepoRoute = React.createClass({
 
