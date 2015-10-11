@@ -103,7 +103,7 @@ export default class Auth {
 
     localStorage.removeItem(cacheKey);
 
-    return Promise.resolve(true);
+    return this.anonymous();
   }
 
 }
