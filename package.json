@@ -20,7 +20,7 @@
     "react": "^0.14.0",
     "react-bootstrap": "^0.27.1",
     "react-dom": "^0.14.0",
-    "react-loader": "~1.4.0",
+    "react-loader": "dallonf/react-loader#master",
     "react-router": "~1.0.0-rc1",
     "underscore": "~1.8.3"
   },
