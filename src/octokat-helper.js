@@ -16,7 +16,13 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, each, done);
+    this.fetchAll(cacheKey, requester, (err, data, cancel) => {
+      data.forEach(d => {
+        d.owner = owner;
+        d.repo = repo;
+      });
+      each(err, data, cancel);
+    }, done);
   }
 
   getIssues(owner, repo, each, done) {
@@ -29,7 +35,13 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, each, done);
+    this.fetchAll(cacheKey, requester, (err, data, cancel) => {
+      data.forEach(d => {
+        d.owner = owner;
+        d.repo = repo;
+      });
+      each(err, data, cancel);
+    }, done);
   }
 
   getIssuesThenComments(
