@@ -13,7 +13,9 @@ import {
   Alert,
   Button,
   CollapsibleNav,
+  Input,
   MenuItem,
+  Modal,
   Nav,
   Navbar,
   NavBrand,
@@ -23,12 +25,14 @@ import {
 
 
 class AppRoute extends React.Component {
+
   constructor(props) {
     super(props);
     this.state = {
       error: null,
       user: null,
       authed: false,
+      githubAccessToken: null,
       rateLimit: {},
       reset: new Date(),
       repos: [
@@ -71,6 +75,18 @@ class AppRoute extends React.Component {
   }
 
   onClickSignIn() {
+    this.showAuthModal();
+  }
+
+  onClickAuth() {
+    this.showAuthModal();
+  }
+
+  showAuthModal() {
+    this.setState({showingAuthModal: true});
+  }
+
+  signIn() {
     Auth.signIn().then(this.onSignedIn.bind(this));
   }
 
@@ -86,6 +102,7 @@ class AppRoute extends React.Component {
     Auth.check(options).
       then(d => {
         console.log('authed', d);
+        this.setState({githubAccessToken: d.githubAccessToken})
         this.onSignedIn();
       });
   }
@@ -101,11 +118,24 @@ class AppRoute extends React.Component {
 
   signInFromAlert() {
     this.dismissAlert();
-    this.onClickSignIn();
+    this.signIn();
   }
 
   dismissAlert() {
     this.setState({error: null});
+  }
+
+  closeAuthModal() {
+    this.setState({showingAuthModal: false});
+  }
+
+  onChangeGitHubAccessToken(e) {
+    var githubAccessToken = e.target.value;
+    this.setState({githubAccessToken});
+    Auth.setToken(githubAccessToken).
+      then(d => {
+        this.onSignedIn();
+      });
   }
 
   render() {
@@ -134,7 +164,7 @@ class AppRoute extends React.Component {
           <h4>Oh snap! You got an error!</h4>
           <p>{message}</p>
           <p>
-            <Button onClick={this.signInFromAlert.bind(this)} bsStyle="success">Sign In</Button>
+            <Button onClick={this.onClickSignIn.bind(this)} bsStyle="success">Sign In</Button>
             <span> or </span>
             <Button onClick={this.dismissAlert.bind(this)}>Hide Alert</Button>
           </p>
@@ -167,6 +197,11 @@ class AppRoute extends React.Component {
             title={avatar}
             id="ghir-navbar-user-dropdown"
           >
+            <MenuItem eventKey={5}
+              onSelect={this.onClickAuth.bind(this)}
+            >
+              <i className="fa fa-user"></i> Authentication
+            </MenuItem>
             <MenuItem eventKey={5}
               onSelect={this.onClickSignOut.bind(this)}
             >
@@ -211,6 +246,39 @@ class AppRoute extends React.Component {
           </CollapsibleNav>
         </Navbar>
 
+        <Modal show={this.state.showingAuthModal} onHide={this.closeAuthModal.bind(this)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Authentication</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+
+            <Button
+              bsStyle="success"
+              onClick={this.signIn.bind(this)}
+            >
+              Sign In to GitHub via OAuth.io
+            </Button>
+
+            <hr />
+
+            <p>Or provide an access token:</p>
+
+            <Input
+              type="text"
+              value={this.state.githubAccessToken}
+              onChange={this.onChangeGitHubAccessToken.bind(this)}
+            />
+
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              onClick={this.closeAuthModal.bind(this)}
+            >
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
         {errorCmp}
 
         <div>
@@ -225,6 +293,7 @@ class AppRoute extends React.Component {
         </div>
 
         {children}
+
       </div>
     )
   }
