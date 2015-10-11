@@ -1,5 +1,5 @@
 import assert from 'assert';
-import {GitHubIssueRank as ghir} from '../src';
+import * as ghir from '../src/helper';
 
 assert(ghir.hasVote('I agree, +1!'));
 assert(! ghir.hasVote('I agree, 2+1!'));
