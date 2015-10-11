@@ -5,6 +5,14 @@ class OctokatHelper {
     this.octokat = octokat;
   }
 
+  parseError(err) {
+    try {
+      err = JSON.parse(err.message);
+    }
+    catch (e) {}
+    return err;
+  }
+
   getComments(owner, repo, issue, each, done) {
     var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
 
@@ -17,7 +25,7 @@ class OctokatHelper {
     };
 
     this.fetchAll(cacheKey, requester, (err, data, cancel) => {
-      if (err) return done(err);
+      if (err) return done(this.parseError(err));
       data.forEach(d => {
         d.owner = owner;
         d.repo = repo;
@@ -37,7 +45,7 @@ class OctokatHelper {
     };
 
     this.fetchAll(cacheKey, requester, (err, data, cancel) => {
-      if (err) return done(err);
+      if (err) return done(this.parseError(err));
       data.forEach(d => {
         d.owner = owner;
         d.repo = repo;
@@ -58,13 +66,13 @@ class OctokatHelper {
 
     this.getIssues(
       owner, repo,
-      function (err, issues) {
-        if (err) return done(err);
+      (err, issues) => {
+        if (err) return done(this.parseError(err));
         issues = issues.map(issue => ({issue}));
         eachIssues(err, issues, cancel);
       },
       (err, issues) => {
-        if (err) return done(err);
+        if (err) return done(this.parseError(err));
         async.reduce(issues,
           [],
           (memo, issue, cb) => {
@@ -80,7 +88,7 @@ class OctokatHelper {
               this.getComments(
                 owner, repo, issue.number,
                 (err, comments, cancel2) => {
-                  if (err) return done(err);
+                  if (err) return done(this.parseError(err));
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
@@ -90,7 +98,7 @@ class OctokatHelper {
                   eachComments(err, memo, cancel1and2, issue);
                 },
                 (err, comments, cancel2) => {
-                  if (err) return done(err);
+                  if (err) return done(this.parseError(err));
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
@@ -107,7 +115,7 @@ class OctokatHelper {
             }
           },
           (err, results) => {
-            // if (err) return done(err);
+            // if (err) return done(this.parseError(err));
             done(err, results, cancel);
           }
         );
@@ -126,26 +134,26 @@ class OctokatHelper {
     };
 
     async.doWhilst(
-      function (cb) {
+      (cb) => {
         promiser().then(
-          function (data) {
+          (data) => {
             allData = allData.concat(data);
             each(null, allData, cancel);
             promiser = data.nextPage;
             cb();
           },
-          function (err) {
-            if (err) return cb(err);
+          (err) => {
+            if (err) return cb(this.parseError(err));
             each(err, null, cancel);
             cb(err, null, cancel);
           }
         );
       },
-      function () {
+      () => {
         return promiser;
       },
-      function (err) {
-        if (err) return done(err);
+      (err) => {
+        if (err) return done(this.parseError(err));
 
         done(err, allData, cancel);
       }
