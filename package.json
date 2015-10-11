@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "async": "~1.4.2",
-    "babel": "^5.8.23",
     "bootstrap": "^3.3.5",
     "es6-promise": "~3.0.2",
     "font-awesome": "^4.4.0",
