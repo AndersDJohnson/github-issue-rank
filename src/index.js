@@ -158,10 +158,10 @@ var GitHubIssueRank = (function () {
 
 
   out.render = function () {
-    var AppRoute = React.createClass({
-
-      getInitialState() {
-        return {
+    class AppRoute extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
           rateLimit: {},
           reset: new Date(),
           repos: [
@@ -169,10 +169,9 @@ var GitHubIssueRank = (function () {
             'isaacs/github'
           ]
         };
-      },
+      }
 
       componentDidMount() {
-
         var checkRateLimit = () => {
           if (!octokat) {
             setTimeout(checkRateLimit, 2000);
@@ -193,10 +192,9 @@ var GitHubIssueRank = (function () {
           );
         };
         checkRateLimit();
-      },
+      }
 
       render() {
-
         var children = this.props.children;
 
         if (! children) {
@@ -232,22 +230,23 @@ var GitHubIssueRank = (function () {
           </div>
         )
       }
-    });
+    };
 
 
-    var NoRoute = React.createClass({
+    class NoRoute extends React.Component {
       componentDidMount() {
         console.log(this.props.params);
-      },
+      }
 
       render() {
         return (
           <h1>404</h1>
         )
       }
-    });
+    };
 
-    class LinkComponent {
+
+    class LinkComponent extends React.Component {
       render() {
         var data = this.data();
         return <a href={this.props.rowData.htmlUrl} target="_blank">{data}</a>;
@@ -264,10 +263,10 @@ var GitHubIssueRank = (function () {
       }
     };
 
-    class RepoRoute {
-
-      getInitialState() {
-        return {
+    class RepoRoute extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
           rows:[],
           loaded: false,
           anyLoaded: false
@@ -336,7 +335,7 @@ var GitHubIssueRank = (function () {
 
       render() {
 
-          var columnMetadata = [
+        var columnMetadata = [
           {
             columnName: 'number',
             displayName: '#',
@@ -371,13 +370,14 @@ var GitHubIssueRank = (function () {
           .pluck('columnName')
           .value();
 
+        var {repo, owner, number} = this.props.params;
         return (
           <div>
             <h2>
-              <a href={'https://github.com/' + this.props.params.owner + '/' + this.props.params.repo}
+              <a href={'https://github.com/' + owner + '/' + repo}
                 target="_blank"
               >
-                {this.props.params.owner}/{this.props.params.repo}
+                {owner}/{repo}
               </a>
             </h2>
 
@@ -399,10 +399,30 @@ var GitHubIssueRank = (function () {
     };
 
 
+    class IssueRoute extends React.Component {
+      render() {
+        var {repo, owner, number} = this.props.params;
+        return (
+          <div>
+            <h2>
+              <a href={'https://github.com/' + owner + '/' + repo
+                + '/issues/' + number}
+                target="_blank"
+              >
+                {owner}/{repo} #{number}
+              </a>
+            </h2>
+          </div>
+        );
+      }
+    };
+
+
     React.render((
       <Router>
         <Route path="/" component={AppRoute}>
           <Route path=":owner/:repo" component={RepoRoute}/>
+          <Route path=":owner/:repo/:number" component={IssueRoute}/>
           <Route path="*" component={NoRoute}/>
         </Route>
       </Router>
