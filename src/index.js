@@ -3,17 +3,20 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import async from 'async';
 import _ from 'lodash';
+import assign from 'object-assign';
 // import OAuth from 'oauth-js';
 // import OAuth from 'oauthio';
 // import OAuth from '../bower_components/oauth-js/dist/oauth.js';
-import {OctokatCacheHandler} from './octokat-cache-handler';
-import {OctokatHelper} from './octokat-helper';
+import { OctokatCacheHandler } from './octokat-cache-handler';
+import { OctokatHelper } from './octokat-helper';
 
 import { octokat, octokatHelper } from './factory';
 
 import * as helper from './helper';
 
-import {RouterComponent} from './components';
+import { RouterComponent } from './components';
+
+import Options from './options';
 
 
 var GitHubIssueRank = (function () {
@@ -34,34 +37,21 @@ var GitHubIssueRank = (function () {
 
 
   out.run = function (options) {
-
     options = options || {};
 
-    OAuth.initialize(options.oAuthIoKey);
+    assign(Options, options);
 
-    OAuth.popup('github')
-      .done(function(result) {
-          githubAccessToken = result.access_token;
+    console.log(Options);
 
-          console.log('githubAccessToken', githubAccessToken);
+    var octokatCacheHandler = new OctokatCacheHandler();
 
-          var octokatCacheHandler = new OctokatCacheHandler();
+    octokat(new Octokat({
+      cacheHandler: octokatCacheHandler
+    }));
 
-          octokat(new Octokat({
-            // username: "USER_NAME",
-            // password: "PASSWORD"
-            //
-            token: githubAccessToken,
-            cacheHandler: octokatCacheHandler
-          }));
+    octokatHelper(new OctokatHelper(octokat()));
 
-          octokatHelper(new OctokatHelper(octokat()));
-
-          out.render();
-      })
-      .fail(function (err) {
-          console.error(arguments);
-      });
+    out.render();
   };
 
 

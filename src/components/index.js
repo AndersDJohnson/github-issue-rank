@@ -6,6 +6,18 @@ import Griddle from 'griddle-react';
 import Loader from 'react-loader';
 import { octokat, octokatHelper } from '../factory';
 import * as helper from '../helper';
+import Auth from '../auth';
+
+import {
+  Button,
+  Navbar,
+  NavBrand,
+  CollapsibleNav,
+  Nav,
+  NavItem,
+  NavDropdown,
+  MenuItem
+} from 'react-bootstrap';
 
 
 class AppRoute extends React.Component {
@@ -44,6 +56,13 @@ class AppRoute extends React.Component {
     checkRateLimit();
   }
 
+  onClickSignIn() {
+    Auth.auth().
+      then(d => {
+        console.log('authed', d);
+      })
+  }
+
   render() {
     var children = this.props.children;
 
@@ -63,7 +82,42 @@ class AppRoute extends React.Component {
 
     return (
       <div>
-        <h1><Link to="/">GitHub Issue Rank</Link></h1>
+
+        <Navbar toggleNavKey={0}>
+          <NavBrand>
+            <Link to="/">GitHub Issue Rank</Link>
+          </NavBrand>
+          <CollapsibleNav eventKey={0}>
+
+            <Nav navbar right>
+              <NavDropdown eventKey={3}
+                title={<i className="fa fa-bars"></i>}
+                id="collapsible-nav-dropdown">
+                <MenuItem eventKey="1">
+                  <i className="fa fa-gear"></i> Settings
+                </MenuItem>
+                <MenuItem divider />
+                <MenuItem eventKey="4"
+                  href="https://github.com/AndersDJohnson/github-issue-rank"
+                  target="_blank"
+                >
+                  <i className="fa fa-code"></i> Source Code
+                </MenuItem>
+              </NavDropdown>
+            </Nav>
+
+            {/*
+              https://github.com/react-bootstrap/react-bootstrap/issues/1404
+            */}
+            <button type="button"
+              className="btn btn-success navbar-btn navbar-right"
+              onClick={this.onClickSignIn}
+            >
+              Sign In
+            </button>
+
+          </CollapsibleNav>
+        </Navbar>
 
         <div>
           <progress id="gh-api-limit"
