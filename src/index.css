@@ -3,17 +3,22 @@
  * Repo route
  */
 
-th[data-title] {
-  text-align: center;
+.ghir-route-repo .griddle table {
+  table-layout: auto !important;
+}
+
+.griddle-column-title {
+  width: 99%;
+  text-align: left;
 }
 
 .griddle-column-number {
-  width: 4em;
+  white-space: nowrap;
   text-align: left;
 }
 
 .griddle-column-voteCount {
-  width: 6em;
+  white-space: nowrap;
   text-align: right;
 }
 
