@@ -1,8 +1,6 @@
 import assert from 'assert';
 import {GitHubIssueRank as ghir} from '../src';
 
-assert.ok(true);
-
 assert(ghir.hasVote('I agree, +1!'));
 assert(! ghir.hasVote('I agree, 2+1!'));
 assert(! ghir.hasVote('I agree!'));
