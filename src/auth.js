@@ -67,15 +67,19 @@ export default class Auth {
           .done(result => {
               var githubAccessToken = Auth.githubAccessToken = result.access_token;
 
-              localStorage.setItem(cacheKey, githubAccessToken);
-
-              return this.withToken(githubAccessToken);
+              return this.setToken(githubAccessToken);
           })
           .fail(err => {
               console.error(err);
+              return Promise.reject(err);
           });
       })
     );
+  }
+
+  static setToken(githubAccessToken) {
+    localStorage.setItem(cacheKey, githubAccessToken);
+    return this.withToken(githubAccessToken);
   }
 
   /**
