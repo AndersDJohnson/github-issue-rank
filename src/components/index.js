@@ -38,7 +38,8 @@ class AppRoute extends React.Component {
       repos: [
         'oauth-io/oauth-js',
         'isaacs/github'
-      ]
+      ],
+      showingAuthModal: false
     };
 
     dispatcher.register(payload => {
@@ -171,12 +172,56 @@ class AppRoute extends React.Component {
         </Alert>;
     }
 
-    var authCmp;
+    var authModalSignInCmp;
+    if (! this.state.user) {
+      authModalSignInCmp = (
+        <Button
+          bsStyle="success"
+          onClick={this.signIn.bind(this)}
+        >
+          Sign In to GitHub via OAuth.io
+        </Button>
+      );
+    }
+    else {
+      authModalSignInCmp = (
+        <div>
+          <div>
+            <a
+              href={this.state.user.htmlUrl}
+              target="_blank"
+            >
+              <img src={this.state.user.avatarUrl}
+                className="ghir-auth-user-avatar"
+              ></img>
+            </a>
+          </div>
+          <div>
+            <a
+              href={this.state.user.htmlUrl}
+              target="_blank"
+            >
+              @{this.state.user.login}
+            </a>
+          </div>
+          <div>
+            <Button
+              bsStyle="success"
+              onClick={this.onClickSignOut.bind(this)}
+            >
+              <i className="fa fa-sign-out"></i> Sign Out
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    var authBarCmp;
     if (! this.state.user) {
       /*
        * https://github.com/react-bootstrap/react-bootstrap/issues/1404
        */
-      authCmp = (
+      authBarCmp = (
         <button type="button"
           className="btn btn-success navbar-btn navbar-right"
           onClick={this.onClickSignIn.bind(this)}
@@ -191,7 +236,7 @@ class AppRoute extends React.Component {
           className="ghir-navbar-user-avatar"
         ></img>
       );
-      authCmp = (
+      authBarCmp = (
         <Nav navbar right>
           <NavDropdown eventKey={2}
             title={avatar}
@@ -241,7 +286,7 @@ class AppRoute extends React.Component {
 
             </Nav>
 
-            {authCmp}
+            {authBarCmp}
 
           </CollapsibleNav>
         </Navbar>
@@ -252,12 +297,7 @@ class AppRoute extends React.Component {
           </Modal.Header>
           <Modal.Body>
 
-            <Button
-              bsStyle="success"
-              onClick={this.signIn.bind(this)}
-            >
-              Sign In to GitHub via OAuth.io
-            </Button>
+            {authModalSignInCmp}
 
             <hr />
 
