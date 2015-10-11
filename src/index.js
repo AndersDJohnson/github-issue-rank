@@ -228,7 +228,7 @@ var GitHubIssueRank = (function () {
                 title="API Limit"
                 value={this.state.rateLimit.remaining}
                 max={this.state.rateLimit.limit} />
-              <label for="gh-api-limit">
+              <label htmlFor="gh-api-limit">
                 API Limit {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
                 &nbsp;(resets {this.state.reset.toString()})
               </label>
