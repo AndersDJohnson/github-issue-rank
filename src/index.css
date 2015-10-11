@@ -28,4 +28,5 @@ th[data-title] {
 .ghir-issue-vote-avatar {
   width: 32px;
   height: 32px;
+  background: #ccc;
 }
