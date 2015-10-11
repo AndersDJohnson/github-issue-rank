@@ -264,7 +264,7 @@ var GitHubIssueRank = (function () {
       }
     };
 
-    var RepoRoute = React.createClass({
+    class RepoRoute {
 
       getInitialState() {
         return {
@@ -272,28 +272,28 @@ var GitHubIssueRank = (function () {
           loaded: false,
           anyLoaded: false
         };
-      },
+      }
 
       componentDidUpdate() {
         this.unmounting = false;
         this.showRepo();
-      },
+      }
 
       componentDidMount() {
         this.unmounting = false;
         this.showRepo();
-      },
+      }
 
       componentWillUnmount () {
         // allows us to ignore an inflight request in scenario 4
         this.unmounting = true;
         this.owner = null;
         this.repo = null;
-      },
+      }
 
       sameState(owner, repo) {
         return (! this.unmounting) && (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
-      },
+      }
 
       showRepo() {
         var params = this.props.params;
@@ -324,7 +324,7 @@ var GitHubIssueRank = (function () {
               loaded: true
             });
           });
-      },
+      }
 
       showRows(err, rows) {
         if (! this.unmounting) {
@@ -332,7 +332,7 @@ var GitHubIssueRank = (function () {
             rows
           });
         }
-      },
+      }
 
       render() {
 
@@ -396,7 +396,7 @@ var GitHubIssueRank = (function () {
           </div>
         )
       }
-    });
+    };
 
 
     React.render((
