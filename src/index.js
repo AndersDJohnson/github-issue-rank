@@ -43,11 +43,19 @@ var GitHubIssueRank = (function () {
 
 
   var withComments = function (comments) {
-    getVoteCountForComment(comments);
+    getVoteCountForComments(comments);
   };
 
 
-  var getVoteCountForComment = function (comments) {
+  var mapCommentsHaveVotes = function (comments) {
+    return comments.map(c => {
+      c.hasVote = hasVote(c.body);
+      return c;
+    });
+  };
+
+
+  var getVoteCountForComments = function (comments) {
 
     if (! comments) return 0;
 
@@ -55,20 +63,18 @@ var GitHubIssueRank = (function () {
 
     var alreadyUsers = {};
 
-    comments.forEach(function (comment) {
-      var body = comment.body;
+    comments = mapCommentsHaveVotes(comments);
 
-      var login = comment.user.login;
+    comments.forEach(c => {
+
+      var login = c.user.login;
 
       if (alreadyUsers[login]) {
         return;
       }
 
-      var thisHasVote = hasVote(body);
-      if (thisHasVote) {
-
+      if (c.hasVote) {
         alreadyUsers[login] = true;
-
         voteCount += 1;
       }
     });
@@ -124,7 +130,7 @@ var GitHubIssueRank = (function () {
     results.forEach(function (result) {
       var voteCount = 0;
       if (result.comments) {
-        voteCount = getVoteCountForComment(result.comments);
+        voteCount = getVoteCountForComments(result.comments);
       }
       result.voteCount = voteCount;
     });
@@ -144,10 +150,12 @@ var GitHubIssueRank = (function () {
       // var ratio = voteCount / issue.comments;
 
       rows.push({
-        number: issue.number||'',
-        title: issue.title||'',
-        htmlUrl: issue.htmlUrl||'',
-        voteCount: voteCount ||''
+        number: issue.number || '',
+        title: issue.title || '',
+        htmlUrl: issue.htmlUrl || '',
+        owner: issue.owner || '',
+        repo: issue.repo || '',
+        voteCount: voteCount || ''
         // comments: issue.comments||'',
         // ratio:ratio ||''
       });
@@ -249,7 +257,9 @@ var GitHubIssueRank = (function () {
     class LinkComponent extends React.Component {
       render() {
         var data = this.data();
-        return <a href={this.props.rowData.htmlUrl} target="_blank">{data}</a>;
+        var {owner, repo, number} = this.props.rowData;
+        var href = '/' + owner + '/' + repo + '/' + number;
+        return <Link to={href} target="_blank">{data}</Link>;
       }
       data() {
         return this.props.data;
@@ -267,6 +277,8 @@ var GitHubIssueRank = (function () {
       constructor(props) {
         super(props);
         this.state = {
+          owner: null,
+          repo: null,
           rows:[],
           loaded: false,
           anyLoaded: false
@@ -295,9 +307,7 @@ var GitHubIssueRank = (function () {
       }
 
       showRepo() {
-        var params = this.props.params;
-        var owner = params.owner;
-        var repo = params.repo;
+        var {owner, repo} = this.props.params;
 
         if (this.sameState(owner, repo)) return;
 
@@ -334,6 +344,7 @@ var GitHubIssueRank = (function () {
       }
 
       render() {
+        var {owner, repo} = this.props.params;
 
         var columnMetadata = [
           {
@@ -355,6 +366,14 @@ var GitHubIssueRank = (function () {
             cssClassName: 'griddle-column-voteCount'
           },
           {
+            columnName: 'owner',
+            visible: false
+          },
+          {
+            columnName: 'repo',
+            visible: false
+          },
+          {
             columnName: 'htmlUrl',
             visible: false
           }
@@ -370,14 +389,16 @@ var GitHubIssueRank = (function () {
           .pluck('columnName')
           .value();
 
-        var {repo, owner, number} = this.props.params;
         return (
-          <div>
+          <div className="ghir-route-repo">
             <h2>
+              <Link to={'/' + owner + '/' + repo}>
+                {owner}/{repo}
+              </Link>
               <a href={'https://github.com/' + owner + '/' + repo}
                 target="_blank"
               >
-                {owner}/{repo}
+                GitHub
               </a>
             </h2>
 
@@ -400,18 +421,97 @@ var GitHubIssueRank = (function () {
 
 
     class IssueRoute extends React.Component {
+
+      constructor(props) {
+        super(props);
+        this.state = {
+          owner: null,
+          repo: null,
+          number: null,
+          issue: {},
+          comments: [],
+          commentsWithVotes: [],
+          loaded: false
+        };
+      }
+
+      componentDidMount() {
+        this.unmounting = false;
+        this.showComments();
+      }
+
+      showComments() {
+        var {owner, repo, number} = this.props.params;
+
+        octokat
+          .repos(owner, repo)
+          .issues(number)
+          .fetch()
+          .then((issue) => {
+            // console.log('issue', issue);
+            this.setState({issue});
+          }, (err) => {
+            console.error(err);
+          });
+
+        octokatHelper.getComments(
+          owner, repo, number,
+          (err, comments, cancel) => {
+            // console.log('each', err, comments, cancel);
+            comments = mapCommentsHaveVotes(comments);
+            this.setState({comments});
+            var commentsWithVotes = comments.filter(c => {
+              return c.hasVote;
+            });
+            this.setState({commentsWithVotes});
+          },
+          (err, comments) => {
+            // console.log('done', comments);
+          }
+        );
+      }
+
       render() {
-        var {repo, owner, number} = this.props.params;
+        var {owner, repo, number} = this.props.params;
         return (
-          <div>
+          <div className="ghir-route-issue">
             <h2>
+              <Link to={'/' + owner + '/' + repo}>
+                {owner}/{repo}
+              </Link>
+              <a href={'https://github.com/' + owner + '/' + repo}
+                target="_blank"
+              >
+                GitHub
+              </a>
+              &nbsp;
+              <Link to={'/' + owner + '/' + repo + '/' + number}>
+                #{number}
+              </Link>
               <a href={'https://github.com/' + owner + '/' + repo
                 + '/issues/' + number}
                 target="_blank"
               >
-                {owner}/{repo} #{number}
+                GitHub
               </a>
             </h2>
+
+            <h3>
+              {this.state.issue.title}
+            </h3>
+
+            <ul className="ghir-issue-votes list-unstyled list-inline">
+              {this.state.commentsWithVotes.map(c => {
+                return (
+                  <li key={c.id} className="ghir-issue-vote">
+                    <a href={c.htmlUrl} target="_blank">
+                      <img className="ghir-issue-vote-avatar"
+                        src={c.user.avatarUrl + '&s=32'} />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         );
       }

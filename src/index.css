@@ -1,14 +1,31 @@
 
+/**
+ * Repo route
+ */
+
 th[data-title] {
   text-align: center;
 }
 
 .griddle-column-number {
-  width: 2em;
+  width: 4em;
   text-align: left;
 }
 
 .griddle-column-voteCount {
   width: 5em;
   text-align: right;
+}
+
+/**
+ * Issue route
+ */
+
+.ghir-issue-votes .ghir-issue-vote {
+  padding: 2px;
+}
+
+.ghir-issue-vote-avatar {
+  width: 32px;
+  height: 32px;
 }
