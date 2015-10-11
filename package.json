@@ -12,6 +12,7 @@
     "bootstrap": "^3.3.5",
     "es6-promise": "~3.0.2",
     "fixed-data-table": "~0.4.7",
+    "font-awesome": "^4.4.0",
     "griddle": "~0.1.2",
     "griddle-react": "~0.2.14",
     "lodash": "~3.10.1",

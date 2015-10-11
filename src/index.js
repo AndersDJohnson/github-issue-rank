@@ -397,8 +397,9 @@ var GitHubIssueRank = (function () {
               </Link>
               <a href={'https://github.com/' + owner + '/' + repo}
                 target="_blank"
+                className="ghir-link-github"
               >
-                GitHub
+                <i className="fa fa-github"></i>
               </a>
             </h2>
 
@@ -481,8 +482,9 @@ var GitHubIssueRank = (function () {
               </Link>
               <a href={'https://github.com/' + owner + '/' + repo}
                 target="_blank"
+                className="ghir-link-github"
               >
-                GitHub
+                <i className="fa fa-github"></i>
               </a>
               &nbsp;
               <Link to={'/' + owner + '/' + repo + '/' + number}>
@@ -491,8 +493,9 @@ var GitHubIssueRank = (function () {
               <a href={'https://github.com/' + owner + '/' + repo
                 + '/issues/' + number}
                 target="_blank"
+                className="ghir-link-github"
               >
-                GitHub
+                <i className="fa fa-github"></i>
               </a>
             </h2>
 
