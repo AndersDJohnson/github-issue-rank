@@ -24,6 +24,8 @@ class AppRoute extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      user: null,
+      authed: false,
       rateLimit: {},
       reset: new Date(),
       repos: [
@@ -60,6 +62,12 @@ class AppRoute extends React.Component {
     Auth.auth().
       then(d => {
         console.log('authed', d);
+        this.setState({authed: true});
+
+        octokat().user.fetch().then(user => {
+          console.log(user);
+          this.setState({user});
+        })
       })
   }
 
@@ -80,6 +88,40 @@ class AppRoute extends React.Component {
       );
     }
 
+    var auth;
+    if (! this.state.user) {
+      /*
+       * https://github.com/react-bootstrap/react-bootstrap/issues/1404
+       */
+      auth = (
+        <button type="button"
+          className="btn btn-success navbar-btn navbar-right"
+          onClick={this.onClickSignIn.bind(this)}
+        >
+          Sign In
+        </button>
+      );
+    }
+    else {
+      var avatar = (
+        <img src={this.state.user.avatarUrl}
+          className="ghir-navbar-user-avatar"
+        ></img>
+      );
+      auth = (
+        <Nav navbar right>
+          <NavDropdown eventKey={2}
+            title={avatar}
+            id="ghir-navbar-user-dropdown"
+          >
+            <MenuItem eventKey="1">
+              <i className="fa fa-sign-out"></i> Sign Out
+            </MenuItem>
+          </NavDropdown>
+        </Nav>
+      );
+    }
+
     return (
       <div>
 
@@ -90,9 +132,11 @@ class AppRoute extends React.Component {
           <CollapsibleNav eventKey={0}>
 
             <Nav navbar right>
+
               <NavDropdown eventKey={3}
                 title={<i className="fa fa-bars"></i>}
-                id="collapsible-nav-dropdown">
+                id="ghir-navbar-more-dropdown"
+              >
                 <MenuItem eventKey="1">
                   <i className="fa fa-gear"></i> Settings
                 </MenuItem>
@@ -104,17 +148,10 @@ class AppRoute extends React.Component {
                   <i className="fa fa-code"></i> Source Code
                 </MenuItem>
               </NavDropdown>
+
             </Nav>
 
-            {/*
-              https://github.com/react-bootstrap/react-bootstrap/issues/1404
-            */}
-            <button type="button"
-              className="btn btn-success navbar-btn navbar-right"
-              onClick={this.onClickSignIn}
-            >
-              Sign In
-            </button>
+            {auth}
 
           </CollapsibleNav>
         </Navbar>
@@ -262,6 +299,7 @@ class RepoRoute extends React.Component {
 
     helper.showRepo(owner, repo,
       (err, rows, cancel) => {
+        if (err) throw err;
         if ( ! this.sameState(owner, repo)) return cancel();
         this.showRows(err, rows);
         this.setState({
@@ -269,6 +307,7 @@ class RepoRoute extends React.Component {
         });
       },
       (err, rows, cancel) => {
+        if (err) throw err;
         if ( ! this.sameState(owner, repo)) return cancel();
         this.showRows(err, rows);
         this.setState({
@@ -348,16 +387,18 @@ class IssueRoute extends React.Component {
       .repos(owner, repo)
       .issues(number)
       .fetch()
-      .then((issue) => {
+      .then(issue => {
         // console.log('issue', issue);
         this.setState({issue});
       }, (err) => {
-        console.error(err);
+        if (err) throw err;
       });
 
     octokatHelper().getComments(
       owner, repo, number,
       (err, comments, cancel) => {
+        if (err) throw err;
+
         // console.log('each', err, comments, cancel);
         comments = helper.mapCommentsHaveVotes(comments);
         this.setState({comments});
@@ -367,6 +408,7 @@ class IssueRoute extends React.Component {
         this.setState({commentsWithVotes});
       },
       (err, comments) => {
+        if (err) throw err;
         // console.log('done', comments);
       }
     );
