@@ -7,16 +7,18 @@ import Loader from 'react-loader';
 import { octokat, octokatHelper } from '../factory';
 import * as helper from '../helper';
 import Auth from '../auth';
+import { dispatcher } from '../dispatcher';
 
 import {
+  Alert,
   Button,
+  CollapsibleNav,
+  MenuItem,
+  Nav,
   Navbar,
   NavBrand,
-  CollapsibleNav,
-  Nav,
-  NavItem,
   NavDropdown,
-  MenuItem
+  NavItem
 } from 'react-bootstrap';
 
 
@@ -24,6 +26,7 @@ class AppRoute extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      error: null,
       user: null,
       authed: false,
       rateLimit: {},
@@ -33,6 +36,13 @@ class AppRoute extends React.Component {
         'isaacs/github'
       ]
     };
+
+    dispatcher.register(payload => {
+      if(payload.actionType === dispatcher.actionTypes.ERROR) {
+        var error = payload.data;
+        this.setState({error});
+      }
+    });
   }
 
   componentDidMount() {
@@ -89,6 +99,15 @@ class AppRoute extends React.Component {
     });
   }
 
+  signInFromAlert() {
+    this.dismissAlert();
+    this.onClickSignIn();
+  }
+
+  dismissAlert() {
+    this.setState({error: null});
+  }
+
   render() {
     var children = this.props.children;
 
@@ -104,6 +123,22 @@ class AppRoute extends React.Component {
           })}
         </ul>
       );
+    }
+
+    var errorCmp;
+    var error = this.state.error;
+    if (this.state.error) {
+      var message = error.message || error;
+      errorCmp =
+        <Alert bsStyle="danger" onDismiss={this.dismissAlert.bind(this)}>
+          <h4>Oh snap! You got an error!</h4>
+          <p>{message}</p>
+          <p>
+            <Button onClick={this.signInFromAlert.bind(this)} bsStyle="success">Sign In</Button>
+            <span> or </span>
+            <Button onClick={this.dismissAlert.bind(this)}>Hide Alert</Button>
+          </p>
+        </Alert>;
     }
 
     var authCmp;
@@ -175,6 +210,8 @@ class AppRoute extends React.Component {
 
           </CollapsibleNav>
         </Navbar>
+
+        {errorCmp}
 
         <div>
           <progress id="gh-api-limit"
@@ -320,7 +357,9 @@ class RepoRoute extends React.Component {
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
         (err, rows, cancel) => {
-          if (err) throw err;
+          if (err) {
+            return dispatcher.error(err);
+          }
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
@@ -328,7 +367,10 @@ class RepoRoute extends React.Component {
           });
         },
         (err, rows, cancel) => {
-          if (err) throw err;
+          if (err) {
+            this.setState({loaded: true, anyLoaded: true})
+            return dispatcher.error(err);
+          }
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
@@ -421,7 +463,9 @@ class IssueRoute extends React.Component {
     octokatHelper().getComments(
       owner, repo, number,
       (err, comments, cancel) => {
-        if (err) throw err;
+        if (err) {
+          return dispatcher.error(err);
+        }
 
         // console.log('each', err, comments, cancel);
         comments = helper.mapCommentsHaveVotes(comments);
@@ -432,7 +476,9 @@ class IssueRoute extends React.Component {
         this.setState({commentsWithVotes});
       },
       (err, comments) => {
-        if (err) throw err;
+        if (err) {
+          return dispatcher.error(err);
+        }
         // console.log('done', comments);
       }
     );
@@ -485,7 +531,6 @@ class IssueRoute extends React.Component {
     );
   }
 };
-
 
 export class RouterComponent extends React.Component {
   render() {
