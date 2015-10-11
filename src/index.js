@@ -168,7 +168,10 @@ var GitHubIssueRank = (function () {
     var AppRoute = React.createClass({
 
       getInitialState() {
-        return {rateLimit: {}};
+        return {
+          rateLimit: {},
+          reset: new Date()
+        };
       },
 
       componentDidMount() {
@@ -181,7 +184,10 @@ var GitHubIssueRank = (function () {
           octokat.rateLimit.fetch().then(
             (data) => {
               var rateLimit = data.resources.core;
-              this.setState({rateLimit});
+              var reset = data.resources.core.reset;
+              var date = new Date(reset*1000);
+              var state = {rateLimit, reset: date};
+              this.setState(state);
               setTimeout(checkRateLimit, 2000);
             },
             () => {
@@ -199,11 +205,12 @@ var GitHubIssueRank = (function () {
 
             <div>
               <progress id="gh-api-limit"
-                title="API Requests Left"
+                title="API Limit"
                 value={this.state.rateLimit.remaining}
                 max={this.state.rateLimit.limit} />
               <label for="gh-api-limit">
-                API Requests Left {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
+                API Limit {this.state.rateLimit.remaining} / {this.state.rateLimit.limit}
+                &nbsp;(resets {this.state.reset.toString()})
               </label>
             </div>
 
