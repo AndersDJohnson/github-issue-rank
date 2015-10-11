@@ -41,22 +41,10 @@ var GitHubIssueRank = (function () {
 
     assign(Options, options);
 
-    console.log(Options);
-
-    var octokatCacheHandler = new OctokatCacheHandler();
-
-    octokat(new Octokat({
-      cacheHandler: octokatCacheHandler
-    }));
-
-    octokatHelper(new OctokatHelper(octokat()));
-
     out.render();
   };
 
-
   return out;
-
 })();
 
 export {GitHubIssueRank};

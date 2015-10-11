@@ -36,6 +36,8 @@ class AppRoute extends React.Component {
   }
 
   componentDidMount() {
+    this.checkAuth();
+
     var checkRateLimit = () => {
       if (!octokat()) {
         setTimeout(checkRateLimit, 2000);
@@ -59,16 +61,32 @@ class AppRoute extends React.Component {
   }
 
   onClickSignIn() {
-    Auth.auth().
+    Auth.signIn().then(this.onSignedIn.bind(this));
+  }
+
+  onClickSignOut() {
+    console.log('onClickSignOut');
+    Auth.signOut().
+      then(d => {
+        this.setState({authed: false, user: null})
+      });
+  }
+
+  checkAuth(options) {
+    Auth.check(options).
       then(d => {
         console.log('authed', d);
-        this.setState({authed: true});
+        this.onSignedIn();
+      });
+  }
 
-        octokat().user.fetch().then(user => {
-          console.log(user);
-          this.setState({user});
-        })
-      })
+  onSignedIn() {
+    this.setState({authed: true});
+
+    octokat().user.fetch().then(user => {
+      console.log(user);
+      this.setState({user});
+    });
   }
 
   render() {
@@ -88,12 +106,12 @@ class AppRoute extends React.Component {
       );
     }
 
-    var auth;
+    var authCmp;
     if (! this.state.user) {
       /*
        * https://github.com/react-bootstrap/react-bootstrap/issues/1404
        */
-      auth = (
+      authCmp = (
         <button type="button"
           className="btn btn-success navbar-btn navbar-right"
           onClick={this.onClickSignIn.bind(this)}
@@ -108,13 +126,15 @@ class AppRoute extends React.Component {
           className="ghir-navbar-user-avatar"
         ></img>
       );
-      auth = (
+      authCmp = (
         <Nav navbar right>
           <NavDropdown eventKey={2}
             title={avatar}
             id="ghir-navbar-user-dropdown"
           >
-            <MenuItem eventKey="1">
+            <MenuItem eventKey={5}
+              onSelect={this.onClickSignOut.bind(this)}
+            >
               <i className="fa fa-sign-out"></i> Sign Out
             </MenuItem>
           </NavDropdown>
@@ -137,11 +157,11 @@ class AppRoute extends React.Component {
                 title={<i className="fa fa-bars"></i>}
                 id="ghir-navbar-more-dropdown"
               >
-                <MenuItem eventKey="1">
+                <MenuItem eventKey={1}>
                   <i className="fa fa-gear"></i> Settings
                 </MenuItem>
                 <MenuItem divider />
-                <MenuItem eventKey="4"
+                <MenuItem eventKey={4}
                   href="https://github.com/AndersDJohnson/github-issue-rank"
                   target="_blank"
                 >
@@ -151,7 +171,7 @@ class AppRoute extends React.Component {
 
             </Nav>
 
-            {auth}
+            {authCmp}
 
           </CollapsibleNav>
         </Navbar>
@@ -297,23 +317,27 @@ class RepoRoute extends React.Component {
       rows: []
     });
 
-    helper.showRepo(owner, repo,
-      (err, rows, cancel) => {
-        if (err) throw err;
-        if ( ! this.sameState(owner, repo)) return cancel();
-        this.showRows(err, rows);
-        this.setState({
-          anyLoaded: true
-        });
-      },
-      (err, rows, cancel) => {
-        if (err) throw err;
-        if ( ! this.sameState(owner, repo)) return cancel();
-        this.showRows(err, rows);
-        this.setState({
-          loaded: true
-        });
-      });
+    Auth.wait().then(() => {
+      helper.showRepo(owner, repo,
+        (err, rows, cancel) => {
+          if (err) throw err;
+          if ( ! this.sameState(owner, repo)) return cancel();
+          this.showRows(err, rows);
+          this.setState({
+            anyLoaded: true
+          });
+        },
+        (err, rows, cancel) => {
+          if (err) throw err;
+          if ( ! this.sameState(owner, repo)) return cancel();
+          this.showRows(err, rows);
+          this.setState({
+            loaded: true
+          });
+        }
+      );
+    });
+
   }
 
   showRows(err, rows) {
