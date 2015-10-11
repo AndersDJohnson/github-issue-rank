@@ -31,7 +31,10 @@
   "scripts": {
     "test": "node build/test.bundle.js",
     "build": "npm ru build-src",
-    "build-src": "cp -r src/* public && cp -r node_modules public && browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
+    "cp-src": "cp -r src/* public",
+    "cp-node": "cp -r node_modules public",
+    "browserify-src": "browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
+    "build-src": "npm ru cp-src && npm ru cp-node && npm ru browserify-src",
     "build-test": "browserify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js",
     "watch": "npm ru watch-src",
     "watch-src": "watchify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
