@@ -172,7 +172,6 @@ var GitHubIssueRank = (function () {
       },
 
       componentDidMount() {
-        console.log(this.props.params);
 
         var checkRateLimit = () => {
           if (!octokat) {
