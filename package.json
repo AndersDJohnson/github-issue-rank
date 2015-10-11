@@ -33,7 +33,7 @@
     "build": "npm ru build-src",
     "build-src": "cp -r src/* public && cp -r node_modules public && browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
     "build-test": "browserify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js",
-    "watch": "npm ru watch",
+    "watch": "npm ru watch-src",
     "watch-src": "watchify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
     "watch-test": "watchify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js"
   },
