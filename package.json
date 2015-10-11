@@ -7,18 +7,19 @@
     "test": "test"
   },
   "dependencies": {
-    "babel": "^5.8.23",
-    "octokat": "^0.4.12",
-    "react": "^0.13.3",
-    "fixed-data-table": "~0.4.7",
     "async": "~1.4.2",
+    "babel": "^5.8.23",
+    "bootstrap": "^3.3.5",
+    "es6-promise": "~3.0.2",
+    "fixed-data-table": "~0.4.7",
     "griddle": "~0.1.2",
-    "underscore": "~1.8.3",
     "griddle-react": "~0.2.14",
     "lodash": "~3.10.1",
-    "es6-promise": "~3.0.2",
+    "octokat": "^0.4.12",
+    "react": "^0.13.3",
+    "react-loader": "~1.4.0",
     "react-router": "~1.0.0-rc1",
-    "react-loader": "~1.4.0"
+    "underscore": "~1.8.3"
   },
   "devDependencies": {
     "babel": "^5.8.23",
@@ -30,7 +31,7 @@
   "scripts": {
     "test": "node build/test.bundle.js",
     "build": "npm ru build-src",
-    "build-src": "cp src/* public && browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
+    "build-src": "cp -r src/* public && cp -r node_modules public && browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
     "build-test": "browserify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js",
     "watch": "npm ru watch",
     "watch-src": "watchify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
