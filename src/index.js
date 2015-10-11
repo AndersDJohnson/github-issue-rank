@@ -216,10 +216,10 @@ var GitHubIssueRank = (function () {
 
             <ul>
               <li>
-                <Link to="/oauth-io/oauth-js">/oauth-io/oauth-js</Link>
+                <Link to="/oauth-io/oauth-js">oauth-io/oauth-js</Link>
               </li>
               <li>
-                <Link to="/isaacs/github">/isaacs/github</Link>
+                <Link to="/isaacs/github">isaacs/github</Link>
               </li>
             </ul>
 
