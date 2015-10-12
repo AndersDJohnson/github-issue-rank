@@ -570,39 +570,41 @@ class IssueRoute extends React.Component {
   showComments() {
     var {owner, repo, number} = this.props.params;
 
-    octokat()
-      .repos(owner, repo)
-      .issues(number)
-      .fetch()
-      .then(issue => {
-        // console.log('issue', issue);
-        this.setState({issue});
-      }, (err) => {
-        if (err) throw err;
-      });
-
-    octokatHelper().getComments(
-      owner, repo, number,
-      (err, comments, cancel) => {
-        if (err) {
-          return dispatcher.error(err);
-        }
-
-        // console.log('each', err, comments, cancel);
-        comments = helper.mapCommentsHaveVotes(comments);
-        this.setState({comments});
-        var commentsWithVotes = comments.filter(c => {
-          return c.hasVote;
+    Auth.wait().then(() => {
+      octokat()
+        .repos(owner, repo)
+        .issues(number)
+        .fetch()
+        .then(issue => {
+          // console.log('issue', issue);
+          this.setState({issue});
+        }, (err) => {
+          if (err) throw err;
         });
-        this.setState({commentsWithVotes});
-      },
-      (err, comments) => {
-        if (err) {
-          return dispatcher.error(err);
+
+      octokatHelper().getComments(
+        owner, repo, number,
+        (err, comments, cancel) => {
+          if (err) {
+            return dispatcher.error(err);
+          }
+
+          // console.log('each', err, comments, cancel);
+          comments = helper.mapCommentsHaveVotes(comments);
+          this.setState({comments});
+          var commentsWithVotes = comments.filter(c => {
+            return c.hasVote;
+          });
+          this.setState({commentsWithVotes});
+        },
+        (err, comments) => {
+          if (err) {
+            return dispatcher.error(err);
+          }
+          // console.log('done', comments);
         }
-        // console.log('done', comments);
-      }
-    );
+      );
+    });
   }
 
   render() {
