@@ -356,8 +356,12 @@ class LinkComponent extends React.Component {
   render() {
     var data = this.data();
     var {owner, repo, number} = this.props.rowData;
-    var href = '/' + owner + '/' + repo + '/' + number;
-    return <Link to={href} target="_blank">{data}</Link>;
+    var href = '#/' + owner + '/' + repo + '/' + number;
+    return (
+      <a href={href} target="_blank">
+        {data}
+      </a>
+    );
   }
   data() {
     return this.props.data;
