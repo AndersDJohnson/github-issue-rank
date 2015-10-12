@@ -112,7 +112,6 @@ class AppRoute extends React.Component {
     this.setState({authed: true});
 
     octokat().user.fetch().then(user => {
-      console.log(user);
       this.setState({user});
     });
   }
