@@ -1,8 +1,27 @@
+import _ from 'lodash';
 import async from 'async';
+
+class OctokatMemoryCache {
+  constructor() {
+    this.cache = {};
+  }
+
+  add(key, value) {
+    return; // disabling cache for now.
+    console.log(key, value);
+    this.cache[key] = value;
+  }
+
+  get(key) {
+    return this.cache[key];
+  }
+}
+
 
 class OctokatHelper {
   constructor(octokat) {
     this.octokat = octokat;
+    window.octokatMemoryCache = this.octokatMemoryCache = new OctokatMemoryCache();
   }
 
   parseError(err) {
@@ -15,6 +34,17 @@ class OctokatHelper {
 
   getComments(owner, repo, issue, each, done) {
     var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
+
+    var cached = this.octokatMemoryCache.get(cacheKey);
+    if (cached) {
+      var cancel = () => {};
+      var progress = {value: 1, max: 1};
+      cached.forEach(() => {
+        each(null, cached, cancel, progress);
+      });
+      done(null, cached, cancel, progress);
+      return;
+    }
 
     var requester = () => {
       return this.octokat
@@ -33,12 +63,26 @@ class OctokatHelper {
         });
         each(err, data, cancel, progress);
       },
-      done
+      (err, data, cancel, progress) => {
+        this.octokatMemoryCache.add(cacheKey, data);
+        done(err, data, cancel, progress);
+      }
     );
   }
 
   getIssues(owner, repo, each, done) {
     var cacheKey = 'issues:' + owner + '/' + repo;
+
+    var cached = this.octokatMemoryCache.get(cacheKey);
+    if (cached) {
+      var cancel = () => {};
+      var progress = {value: 1, max: 1};
+      cached.forEach(() => {
+        each(null, cached, cancel, progress);
+      });
+      done(null, cached, cancel, progress);
+      return;
+    }
 
     var requester = () => {
       return this.octokat
@@ -56,7 +100,10 @@ class OctokatHelper {
         });
         each(err, data, cancel, progress);
       },
-      done
+      (err, data, cancel, progress) => {
+        this.octokatMemoryCache.add(cacheKey, data);
+        done(err, data, cancel, progress);
+      }
     );
   }
 
@@ -104,8 +151,8 @@ class OctokatHelper {
               this.getComments(
                 owner, repo, issue.number,
                 (err, comments, cancel2, progress) => {
-                  totalProgress.value += (1 / (progress.max));
                   if (err) return done(this.parseError(err));
+                  totalProgress.value += (1 / (progress.max));
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
