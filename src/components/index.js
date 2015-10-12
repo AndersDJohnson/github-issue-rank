@@ -426,7 +426,11 @@ class RepoRoute extends React.Component {
       loaded: false,
       anyLoaded: false,
       columnMetadata,
-      columns
+      columns,
+      progress: {
+        value:0,
+        max: 0
+      }
     };
   }
 
@@ -465,17 +469,19 @@ class RepoRoute extends React.Component {
 
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
-        (err, rows, cancel) => {
+        (err, rows, cancel, progress) => {
           if (err) {
             return dispatcher.error(err);
           }
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
-            anyLoaded: true
+            anyLoaded: true,
+            progress
           });
         },
-        (err, rows, cancel) => {
+        (err, rows, cancel, progress) => {
+          // console.log('progress', progress);
           if (err) {
             this.setState({loaded: true, anyLoaded: true})
             return dispatcher.error(err);
@@ -483,7 +489,8 @@ class RepoRoute extends React.Component {
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
-            loaded: true
+            loaded: true,
+            progress
           });
         }
       );
@@ -515,6 +522,11 @@ class RepoRoute extends React.Component {
             <i className="fa fa-github"></i>
           </a>
         </h2>
+
+        <progress
+          value={this.state.progress.value}
+          max={this.state.progress.max}
+        ></progress>
 
         <Loader loaded={this.state.loaded}></Loader>
 

@@ -24,14 +24,17 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, (err, data, cancel) => {
-      if (err) return done(this.parseError(err));
-      data.forEach(d => {
-        d.owner = owner;
-        d.repo = repo;
-      });
-      each(err, data, cancel);
-    }, done);
+    this.fetchAll(cacheKey, requester,
+      (err, data, cancel, progress) => {
+        if (err) return done(this.parseError(err));
+        data.forEach(d => {
+          d.owner = owner;
+          d.repo = repo;
+        });
+        each(err, data, cancel, progress);
+      },
+      done
+    );
   }
 
   getIssues(owner, repo, each, done) {
@@ -44,14 +47,17 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, (err, data, cancel) => {
-      if (err) return done(this.parseError(err));
-      data.forEach(d => {
-        d.owner = owner;
-        d.repo = repo;
-      });
-      each(err, data, cancel);
-    }, done);
+    this.fetchAll(cacheKey, requester,
+      (err, data, cancel, progress) => {
+        if (err) return done(this.parseError(err));
+        data.forEach(d => {
+          d.owner = owner;
+          d.repo = repo;
+        });
+        each(err, data, cancel, progress);
+      },
+      done
+    );
   }
 
   getIssuesThenComments(
@@ -64,15 +70,25 @@ class OctokatHelper {
       cancelled = true;
     };
 
+    var totalProgress = {
+      value: 0,
+      max: null
+    };
+
     this.getIssues(
       owner, repo,
-      (err, issues) => {
+      (err, issues, cancel, progress) => {
         if (err) return done(this.parseError(err));
         issues = issues.map(issue => ({issue}));
-        eachIssues(err, issues, cancel);
+        eachIssues(err, issues, cancel, progress);
       },
-      (err, issues) => {
+      (err, issues, cancel, progress) => {
         if (err) return done(this.parseError(err));
+
+        var numIssues = issues.length;
+
+        totalProgress.max = numIssues;
+
         async.reduce(issues,
           [],
           (memo, issue, cb) => {
@@ -87,7 +103,8 @@ class OctokatHelper {
             if (issue.comments) {
               this.getComments(
                 owner, repo, issue.number,
-                (err, comments, cancel2) => {
+                (err, comments, cancel2, progress) => {
+                  totalProgress.value += (1 / (progress.max));
                   if (err) return done(this.parseError(err));
                   var cancel1and2 = () => {
                     cancel();
@@ -95,28 +112,29 @@ class OctokatHelper {
                   };
                   result.comments = comments;
                   memo.push(result);
-                  eachComments(err, memo, cancel1and2, issue);
+                  eachComments(err, memo, cancel1and2, totalProgress, issue);
                 },
-                (err, comments, cancel2) => {
+                (err, comments, cancel2, progress) => {
                   if (err) return done(this.parseError(err));
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
                   };
                   result.comments = comments;
-                  eachIssueComments(err, memo, cancel1and2, issue);
+                  eachIssueComments(err, memo, cancel1and2, totalProgress, issue);
                   cb(err, memo);
                 }
               );
             }
             else {
-              eachComments(null, m2, cancel, issue, null);
+              totalProgress.value += 1;
+              eachComments(null, m2, cancel, totalProgress, issue, null);
               cb(err, memo);
             }
           },
           (err, results) => {
             // if (err) return done(this.parseError(err));
-            done(err, results, cancel);
+            done(err, results, cancel, totalProgress);
           }
         );
       }
@@ -133,19 +151,35 @@ class OctokatHelper {
       cancelled = true;
     };
 
+    var progress = {
+      value: 0,
+      max: null
+    };
+
     async.doWhilst(
       (cb) => {
         promiser().then(
           (data) => {
+            progress.value += 1;
+            var max;
+            if (data.lastPageUrl) {
+              max = data.lastPageUrl.match(/page=(\d+)/);
+              max = max[1];
+              max = parseFloat(max);
+              progress.max = progress.max || max;
+            }
+            else {
+              progress.max = 1;
+            }
             allData = allData.concat(data);
-            each(null, allData, cancel);
+            each(null, allData, cancel, progress);
             promiser = data.nextPage;
             cb();
           },
           (err) => {
             if (err) return cb(this.parseError(err));
-            each(err, null, cancel);
-            cb(err, null, cancel);
+            each(err, null, cancel, progress);
+            cb(err, null);
           }
         );
       },
@@ -155,7 +189,7 @@ class OctokatHelper {
       (err) => {
         if (err) return done(this.parseError(err));
 
-        done(err, allData, cancel);
+        done(err, allData, cancel, progress);
       }
     );
   }

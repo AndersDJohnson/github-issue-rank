@@ -76,17 +76,17 @@ export var showRepo = function (owner, repo, each, callback) {
   octokatHelper().getIssuesThenComments(
     owner,
     repo,
-    function (err, results, cancel) {
-      each(err, mapResultsToRows(merge(results)), cancel);
+    (err, results, cancel, progress) => {
+      each(err, mapResultsToRows(merge(results)), cancel, progress);
     },
-    function (err, results, cancel, issue) {
-      each(err, mapResultsToRows(merge(results)), cancel, issue);
+    (err, results, cancel, progress, issue) => {
+      each(err, mapResultsToRows(merge(results)), cancel, progress, issue);
     },
-    function (err, results, cancel, issue, comments) {
-      each(err, mapResultsToRows(merge(results)), cancel, issue, comments);
+    (err, results, cancel, progress, issue, comments) => {
+      each(err, mapResultsToRows(merge(results)), cancel, progress, issue, comments);
     },
-    (err, results, cancel) => {
-      callback(err, mapResultsToRows(merge(results)), cancel);
+    (err, results, cancel, progress) => {
+      callback(err, mapResultsToRows(merge(results)), cancel, progress);
     }
   );
 
