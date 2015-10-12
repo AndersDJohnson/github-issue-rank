@@ -667,6 +667,10 @@ class IssueRoute extends React.Component {
               {this.state.issue.title}
             </h3>
 
+            <div>
+              {this.state.commentsWithVotes.length} votes
+            </div>
+
             <ul className="ghir-issue-votes list-unstyled list-inline">
               {this.state.commentsWithVotes.map(c => {
                 return (
