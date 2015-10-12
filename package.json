@@ -14,6 +14,7 @@
     "font-awesome": "^4.4.0",
     "griddle": "~0.1.2",
     "griddle-react": "~0.2.14",
+    "history": "^1.12.5",
     "lodash": "~3.10.1",
     "object-assign": "^4.0.1",
     "octokat": "^0.4.12",

@@ -2,6 +2,7 @@ import _ from 'lodash';
 
 import React from 'react';
 import { Router, Route, Link } from 'react-router';
+import { createHashHistory } from 'history';
 import Griddle from 'griddle-react';
 import Loader from 'react-loader';
 import { octokat, octokatHelper } from '../factory';
@@ -22,6 +23,11 @@ import {
   NavDropdown,
   NavItem
 } from 'react-bootstrap';
+
+
+
+var history = createHashHistory();
+
 
 
 class AppRoute extends React.Component {
@@ -357,9 +363,8 @@ class LinkComponent extends React.Component {
     var data = this.data();
     var {owner, repo, number} = this.props.rowData;
     var href = '#/' + owner + '/' + repo + '/' + number;
-    var fn = this.props.rowData.onClick;
     return (
-      <a onClick={fn}>
+      <a href={href}>
         {data}
       </a>
     );
@@ -507,79 +512,16 @@ class RepoRoute extends React.Component {
 
   showRows(err, rows) {
     if (! this.unmounting) {
-
-      rows.forEach(r => {
-        r.onClick = (e) => {
-          e.preventDefault();
-          this.showIssueModal(r);
-        };
-      });
-
       this.setState({
         rows
       });
     }
   }
 
-  showIssueModal(issue) {
-    this.setState({
-      showingIssueModal: true,
-      issue: issue
-    }, () => {
-      this.showComments();
-    });
-  }
-
-  closeIssueModal() {
-    this.setState({showingIssueModal: false});
-  }
-
-  showComments() {
-    var {owner, repo} = this.props.params;
-
-    var number = this.state.issue.number;
-
-    Auth.wait().then(() => {
-      octokat()
-        .repos(owner, repo)
-        .issues(number)
-        .fetch()
-        .then(issue => {
-          // console.log('issue', issue);
-          this.setState({issue});
-        }, (err) => {
-          if (err) throw err;
-        });
-
-      octokatHelper().getComments(
-        owner, repo, number,
-        (err, comments, cancel) => {
-          if (err) {
-            return dispatcher.error(err);
-          }
-
-          // console.log('each', err, comments, cancel);
-          comments = helper.mapCommentsHaveVotes(comments);
-          this.setState({comments});
-          var commentsWithVotes = comments.filter(c => {
-            return c.hasVote;
-          });
-          this.setState({commentsWithVotes});
-        },
-        (err, comments) => {
-          if (err) {
-            return dispatcher.error(err);
-          }
-          // console.log('done', comments);
-        }
-      );
-    });
-  }
-
   render() {
-    var {owner, repo} = this.props.params;
+    var children = this.props.children;
 
-    var number = this.state.issue ? this.state.issue.number : null;
+    var {owner, repo} = this.props.params;
 
     return (
       <div className="ghir-route-repo">
@@ -614,63 +556,7 @@ class RepoRoute extends React.Component {
           />
         </Loader>
 
-        <Modal show={this.state.showingIssueModal} onHide={this.closeIssueModal.bind(this)}>
-          <Modal.Header closeButton>
-            <Modal.Title>Issue</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-
-            <div className="ghir-route-issue">
-              <h2>
-                <Link to={'/' + owner + '/' + repo}>
-                  {owner}/{repo}
-                </Link>
-                <a href={'https://github.com/' + owner + '/' + repo}
-                  target="_blank"
-                  className="ghir-link-github"
-                >
-                  <i className="fa fa-github"></i>
-                </a>
-                &nbsp;
-                <Link to={'/' + owner + '/' + repo + '/' + number}>
-                  #{number}
-                </Link>
-                <a href={'https://github.com/' + owner + '/' + repo
-                  + '/issues/' + number}
-                  target="_blank"
-                  className="ghir-link-github"
-                >
-                  <i className="fa fa-github"></i>
-                </a>
-              </h2>
-
-              <h3>
-                {this.state.issue.title}
-              </h3>
-
-              <ul className="ghir-issue-votes list-unstyled list-inline">
-                {this.state.commentsWithVotes.map(c => {
-                  return (
-                    <li key={c.id} className="ghir-issue-vote">
-                      <a href={c.htmlUrl} target="_blank">
-                        <img className="ghir-issue-vote-avatar"
-                          src={c.user.avatarUrl + '&s=32'} />
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              onClick={this.closeIssueModal.bind(this)}
-            >
-              Close
-            </Button>
-          </Modal.Footer>
-        </Modal>
+        {children}
 
       </div>
     )
@@ -738,49 +624,72 @@ class IssueRoute extends React.Component {
     });
   }
 
+  closeIssueModal() {
+    var {owner, repo} = this.props.params;
+    history.pushState(null, '/' + owner + '/' + repo);
+  }
+
   render() {
     var {owner, repo, number} = this.props.params;
     return (
       <div className="ghir-route-issue">
-        <h2>
-          <Link to={'/' + owner + '/' + repo}>
-            {owner}/{repo}
-          </Link>
-          <a href={'https://github.com/' + owner + '/' + repo}
-            target="_blank"
-            className="ghir-link-github"
-          >
-            <i className="fa fa-github"></i>
-          </a>
-          &nbsp;
-          <Link to={'/' + owner + '/' + repo + '/' + number}>
-            #{number}
-          </Link>
-          <a href={'https://github.com/' + owner + '/' + repo
-            + '/issues/' + number}
-            target="_blank"
-            className="ghir-link-github"
-          >
-            <i className="fa fa-github"></i>
-          </a>
-        </h2>
 
-        <h3>
-          {this.state.issue.title}
-        </h3>
+        <Modal show={true} onHide={this.closeIssueModal.bind(this)}>
+          <Modal.Header closeButton>
+            <Modal.Title>
 
-        <ul className="ghir-issue-votes list-unstyled list-inline">
-          {this.state.commentsWithVotes.map(c => {
-            return (
-              <li key={c.id} className="ghir-issue-vote">
-                <a href={c.htmlUrl} target="_blank">
-                  <img className="ghir-issue-vote-avatar"
-                    src={c.user.avatarUrl + '&s=32'} />
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+              <Link to={'/' + owner + '/' + repo}>
+                {owner}/{repo}
+              </Link>
+              <a href={'https://github.com/' + owner + '/' + repo}
+                target="_blank"
+                className="ghir-link-github"
+              >
+                <i className="fa fa-github"></i>
+              </a>
+              &nbsp;
+              <Link to={'/' + owner + '/' + repo + '/' + number}>
+                #{number}
+              </Link>
+              <a href={'https://github.com/' + owner + '/' + repo
+                + '/issues/' + number}
+                target="_blank"
+                className="ghir-link-github"
+              >
+                <i className="fa fa-github"></i>
+              </a>
+
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+
+            <h3>
+              {this.state.issue.title}
+            </h3>
+
+            <ul className="ghir-issue-votes list-unstyled list-inline">
+              {this.state.commentsWithVotes.map(c => {
+                return (
+                  <li key={c.id} className="ghir-issue-vote">
+                    <a href={c.htmlUrl} target="_blank">
+                      <img className="ghir-issue-vote-avatar"
+                        src={c.user.avatarUrl + '&s=32'} />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              onClick={this.closeIssueModal.bind(this)}
+            >
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
       </div>
     );
   }
@@ -789,10 +698,11 @@ class IssueRoute extends React.Component {
 export class RouterComponent extends React.Component {
   render() {
     return (
-      <Router>
+      <Router history={history}>
         <Route path="/" component={AppRoute}>
-          <Route path=":owner/:repo" component={RepoRoute}/>
-          <Route path=":owner/:repo/:number" component={IssueRoute}/>
+          <Route path=":owner/:repo" component={RepoRoute}>
+            <Route path=":number" component={IssueRoute}/>
+          </Route>
           <Route path="*" component={NoRoute}/>
         </Route>
       </Router>
