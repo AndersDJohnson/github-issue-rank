@@ -1,4 +1,5 @@
 import Octokat from 'octokat';
+import { OAuth } from 'oauthio-web';
 import assign from 'object-assign';
 import { OctokatCacheHandler } from './octokat-cache-handler';
 import { OctokatHelper } from './octokat-helper';

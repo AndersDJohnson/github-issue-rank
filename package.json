@@ -16,6 +16,7 @@
     "griddle-react": "~0.2.14",
     "history": "^1.12.5",
     "lodash": "~3.10.1",
+    "oauthio-web": "^0.4.4",
     "object-assign": "^4.0.1",
     "octokat": "^0.4.12",
     "react": "^0.14.0",

@@ -10,7 +10,5 @@
     "test",
     "tests"
   ],
-  "dependencies": {
-    "oauth-js": "~0.4.3"
-  }
+  "dependencies": {}
 }
