@@ -1,12 +1,50 @@
+import _ from 'lodash';
 import async from 'async';
+
+class OctokatMemoryCache {
+  constructor() {
+    this.cache = {};
+  }
+
+  add(key, value) {
+    return; // disabling cache for now.
+    console.log(key, value);
+    this.cache[key] = value;
+  }
+
+  get(key) {
+    return this.cache[key];
+  }
+}
+
 
 class OctokatHelper {
   constructor(octokat) {
     this.octokat = octokat;
+    window.octokatMemoryCache = this.octokatMemoryCache = new OctokatMemoryCache();
+  }
+
+  parseError(err) {
+    try {
+      err = JSON.parse(err.message);
+    }
+    catch (e) {}
+    return err;
   }
 
   getComments(owner, repo, issue, each, done) {
     var cacheKey = 'comments:' + owner + '/' + repo + '/' + issue;
+
+    var cached = this.octokatMemoryCache.get(cacheKey);
+    if (cached) {
+      var cancel = () => {};
+      var progress = {value: 1, max: 1};
+      cached.forEach(() => {
+        each(null, cached, cancel, progress);
+      });
+      done(null, cached, cancel, progress);
+      return;
+    }
 
     var requester = () => {
       return this.octokat
@@ -16,17 +54,35 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, (err, data, cancel) => {
-      data.forEach(d => {
-        d.owner = owner;
-        d.repo = repo;
-      });
-      each(err, data, cancel);
-    }, done);
+    this.fetchAll(cacheKey, requester,
+      (err, data, cancel, progress) => {
+        if (err) return done(this.parseError(err));
+        data.forEach(d => {
+          d.owner = owner;
+          d.repo = repo;
+        });
+        each(err, data, cancel, progress);
+      },
+      (err, data, cancel, progress) => {
+        this.octokatMemoryCache.add(cacheKey, data);
+        done(err, data, cancel, progress);
+      }
+    );
   }
 
   getIssues(owner, repo, each, done) {
     var cacheKey = 'issues:' + owner + '/' + repo;
+
+    var cached = this.octokatMemoryCache.get(cacheKey);
+    if (cached) {
+      var cancel = () => {};
+      var progress = {value: 1, max: 1};
+      cached.forEach(() => {
+        each(null, cached, cancel, progress);
+      });
+      done(null, cached, cancel, progress);
+      return;
+    }
 
     var requester = () => {
       return this.octokat
@@ -35,13 +91,20 @@ class OctokatHelper {
         .fetch();
     };
 
-    this.fetchAll(cacheKey, requester, (err, data, cancel) => {
-      data.forEach(d => {
-        d.owner = owner;
-        d.repo = repo;
-      });
-      each(err, data, cancel);
-    }, done);
+    this.fetchAll(cacheKey, requester,
+      (err, data, cancel, progress) => {
+        if (err) return done(this.parseError(err));
+        data.forEach(d => {
+          d.owner = owner;
+          d.repo = repo;
+        });
+        each(err, data, cancel, progress);
+      },
+      (err, data, cancel, progress) => {
+        this.octokatMemoryCache.add(cacheKey, data);
+        done(err, data, cancel, progress);
+      }
+    );
   }
 
   getIssuesThenComments(
@@ -54,13 +117,25 @@ class OctokatHelper {
       cancelled = true;
     };
 
+    var totalProgress = {
+      value: 0,
+      max: null
+    };
+
     this.getIssues(
       owner, repo,
-      function (err, issues) {
+      (err, issues, cancel, progress) => {
+        if (err) return done(this.parseError(err));
         issues = issues.map(issue => ({issue}));
-        eachIssues(err, issues, cancel);
+        eachIssues(err, issues, cancel, progress);
       },
-      (err, issues) => {
+      (err, issues, cancel, progress) => {
+        if (err) return done(this.parseError(err));
+
+        var numIssues = issues.length;
+
+        totalProgress.max = numIssues;
+
         async.reduce(issues,
           [],
           (memo, issue, cb) => {
@@ -75,34 +150,38 @@ class OctokatHelper {
             if (issue.comments) {
               this.getComments(
                 owner, repo, issue.number,
-                (err, comments, cancel2) => {
+                (err, comments, cancel2, progress) => {
+                  if (err) return done(this.parseError(err));
+                  totalProgress.value += (1 / (progress.max));
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
                   };
                   result.comments = comments;
                   memo.push(result);
-                  eachComments(err, memo, cancel1and2, issue);
+                  eachComments(err, memo, cancel1and2, totalProgress, issue);
                 },
-                (err, comments, cancel2) => {
+                (err, comments, cancel2, progress) => {
+                  if (err) return done(this.parseError(err));
                   var cancel1and2 = () => {
                     cancel();
                     cancel2();
                   };
                   result.comments = comments;
-                  eachIssueComments(err, memo, cancel1and2, issue);
+                  eachIssueComments(err, memo, cancel1and2, totalProgress, issue);
                   cb(err, memo);
                 }
               );
             }
             else {
-              eachComments(null, m2, cancel, issue, null);
+              totalProgress.value += 1;
+              eachComments(null, m2, cancel, totalProgress, issue, null);
               cb(err, memo);
             }
           },
           (err, results) => {
-            if (err) return done(err);
-            done(err, results, cancel);
+            // if (err) return done(this.parseError(err));
+            done(err, results, cancel, totalProgress);
           }
         );
       }
@@ -119,28 +198,45 @@ class OctokatHelper {
       cancelled = true;
     };
 
+    var progress = {
+      value: 0,
+      max: null
+    };
+
     async.doWhilst(
-      function (cb) {
+      (cb) => {
         promiser().then(
-          function (data) {
+          (data) => {
+            progress.value += 1;
+            var max;
+            if (data.lastPageUrl) {
+              max = data.lastPageUrl.match(/page=(\d+)/);
+              max = max[1];
+              max = parseFloat(max);
+              progress.max = progress.max || max;
+            }
+            else {
+              progress.max = 1;
+            }
             allData = allData.concat(data);
-            each(null, allData, cancel);
+            each(null, allData, cancel, progress);
             promiser = data.nextPage;
             cb();
           },
-          function (err) {
-            each(err, null, cancel);
-            cb(err, null, cancel);
+          (err) => {
+            if (err) return cb(this.parseError(err));
+            each(err, null, cancel, progress);
+            cb(err, null);
           }
         );
       },
-      function () {
+      () => {
         return promiser;
       },
-      function (err) {
-        if (err) throw err;
+      (err) => {
+        if (err) return done(this.parseError(err));
 
-        done(err, allData, cancel);
+        done(err, allData, cancel, progress);
       }
     );
   }
