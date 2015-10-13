@@ -1,4 +1,5 @@
 import Octokat from 'octokat';
+import { OAuth } from 'oauthio-web';
 import assign from 'object-assign';
 import { OctokatCacheHandler } from './octokat-cache-handler';
 import { OctokatHelper } from './octokat-helper';
@@ -12,6 +13,8 @@ var executor = {};
 var promise = new Promise((resolve, reject) => {
   executor = {resolve, reject};
 });
+
+console.log(OAuth);
 
 export default class Auth {
 

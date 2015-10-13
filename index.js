@@ -4,9 +4,6 @@ import ReactDOM from 'react-dom';
 import async from 'async';
 import _ from 'lodash';
 import assign from 'object-assign';
-// import OAuth from 'oauth-js';
-// import OAuth from 'oauthio';
-// import OAuth from '../bower_components/oauth-js/dist/oauth.js';
 import { OctokatCacheHandler } from './octokat-cache-handler';
 import { OctokatHelper } from './octokat-helper';
 
