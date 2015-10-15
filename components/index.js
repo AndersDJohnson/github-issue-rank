@@ -265,7 +265,7 @@ class AppRoute extends React.Component {
     return (
       <div>
 
-        <Navbar toggleNavKey={0}>
+        <Navbar fixedTop toggleNavKey={0}>
           <NavBrand>
             <Link to="/">GitHub Issue Rank</Link>
           </NavBrand>

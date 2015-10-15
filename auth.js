@@ -14,8 +14,6 @@ var promise = new Promise((resolve, reject) => {
   executor = {resolve, reject};
 });
 
-console.log(OAuth);
-
 export default class Auth {
 
   static githubAccessToken;
