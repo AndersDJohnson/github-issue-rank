@@ -25,10 +25,13 @@ class OctokatHelper {
   }
 
   parseError(err) {
+    // console.log('original err', err, err.status);
     try {
-      err = JSON.parse(err.message);
+      var parsed = JSON.parse(err.message);
+      err.message = parsed.message;
     }
     catch (e) {}
+    // console.log('parsed err', err, err.status);
     return err;
   }
 
