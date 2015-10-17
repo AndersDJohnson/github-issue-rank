@@ -16,7 +16,7 @@ var promise = new Promise((resolve, reject) => {
 
 export default class Auth {
 
-  static githubAccessToken;
+  static gitHubAccessToken;
 
   static wait() {
     return promise;
@@ -26,12 +26,12 @@ export default class Auth {
     var options = assign({}, Options, params);
     console.log('check auth', options);
 
-    var githubAccessToken = localStorage.getItem(cacheKey, githubAccessToken);
+    var gitHubAccessToken = localStorage.getItem(cacheKey, gitHubAccessToken);
 
-    console.log('githubAccessToken', githubAccessToken);
+    console.log('gitHubAccessToken', gitHubAccessToken);
 
-    if (githubAccessToken) {
-      return this.withToken(githubAccessToken);
+    if (gitHubAccessToken) {
+      return this.withToken(gitHubAccessToken);
     }
 
     if (! options.noAnonymous) {
@@ -66,38 +66,42 @@ export default class Auth {
 
         return OAuth.popup('github')
           .done(result => {
-              var githubAccessToken = Auth.githubAccessToken = result.access_token;
+              var gitHubAccessToken = Auth.gitHubAccessToken = result.access_token;
+              console.log('github auth success', result);
 
-              return this.setToken(githubAccessToken);
+              return this.setToken(gitHubAccessToken);
           })
           .fail(err => {
-              console.error(err);
+              console.error('github auth err', err);
               return Promise.reject(err);
           });
       })
     );
   }
 
-  static setToken(githubAccessToken) {
-    localStorage.setItem(cacheKey, githubAccessToken);
-    return this.withToken(githubAccessToken);
+  static setToken(gitHubAccessToken) {
+    try {
+      localStorage.setItem(cacheKey, gitHubAccessToken);
+    }
+    catch (e) {}
+    return this.withToken(gitHubAccessToken);
   }
 
   /**
-   * @param  {[type]} githubAccessToken GitHub access token, else null for guest.
+   * @param  {[type]} gitHubAccessToken GitHub access token, else null for guest.
    * @return {[type]}                   [description]
    */
-  static withToken(githubAccessToken) {
+  static withToken(gitHubAccessToken) {
     var octokatCacheHandler = new OctokatCacheHandler();
 
     octokat(new Octokat({
-      token: githubAccessToken,
+      token: gitHubAccessToken,
       cacheHandler: octokatCacheHandler
     }));
 
     octokatHelper(new OctokatHelper(octokat()));
 
-    var res = { githubAccessToken };
+    var res = { gitHubAccessToken };
 
     executor.resolve(res);
 

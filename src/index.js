@@ -22,7 +22,7 @@ var GitHubIssueRank = (function () {
 
 
   // TODO: Use a global promise to queue work until Octokat instantiated.
-  var githubAccessToken;
+  var gitHubAccessToken;
 
 
   out.render = function () {

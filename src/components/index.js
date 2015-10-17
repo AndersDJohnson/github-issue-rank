@@ -38,7 +38,7 @@ class AppRoute extends React.Component {
       error: null,
       user: null,
       authed: false,
-      githubAccessToken: null,
+      gitHubAccessToken: null,
       rateLimit: {},
       reset: new Date(),
       repos: [
@@ -109,9 +109,27 @@ class AppRoute extends React.Component {
     Auth.check(options).
       then(d => {
         console.log('authed', d);
-        this.setState({githubAccessToken: d.githubAccessToken})
+        this.setState({gitHubAccessToken: d.gitHubAccessToken})
         this.onSignedIn();
       });
+  }
+
+  checkSignIn(gitHubAccessToken) {
+    octokat().user.fetch().then(
+      user => {
+        this.setState({user});
+        Auth.setToken(gitHubAccessToken).
+          then(data => {
+            var {gitHubAccessToken} = data;
+            this.setState({gitHubAccessToken});
+            this.onSignedIn();
+          });
+      },
+      err => {
+        console.error('sign in error', err);
+        // TODO: Show in UI.
+      }
+    )
   }
 
   onSignedIn() {
@@ -136,12 +154,8 @@ class AppRoute extends React.Component {
   }
 
   onChangeGitHubAccessToken(e) {
-    var githubAccessToken = e.target.value;
-    this.setState({githubAccessToken});
-    Auth.setToken(githubAccessToken).
-      then(d => {
-        this.onSignedIn();
-      });
+    var gitHubAccessToken = e.target.value;
+    this.checkSignIn(gitHubAccessToken);
   }
 
   render() {
@@ -310,7 +324,7 @@ class AppRoute extends React.Component {
 
             <Input
               type="text"
-              value={this.state.githubAccessToken}
+              value={this.state.gitHubAccessToken}
               onChange={this.onChangeGitHubAccessToken.bind(this)}
             />
 
