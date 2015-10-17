@@ -11,7 +11,7 @@ import { octokat, octokatHelper } from './factory';
 
 import * as helper from './helper';
 
-import { RouterComponent } from './components';
+import { RouterComponent } from './components/router';
 
 import Options from './options';
 

@@ -28,7 +28,7 @@ export default class Auth {
 
     var gitHubAccessToken = localStorage.getItem(cacheKey, gitHubAccessToken);
 
-    console.log('gitHubAccessToken', gitHubAccessToken);
+    console.log('cached gitHubAccessToken', gitHubAccessToken);
 
     if (gitHubAccessToken) {
       return this.withToken(gitHubAccessToken);
@@ -64,17 +64,24 @@ export default class Auth {
 
         OAuth.initialize(options.oAuthIoKey);
 
-        return OAuth.popup('github')
+        var executor = {};
+        var promise = new Promise((resolve, reject) => {
+          executor = {resolve, reject};
+        });
+
+        OAuth.popup('github')
           .done(result => {
               var gitHubAccessToken = Auth.gitHubAccessToken = result.access_token;
               console.log('github auth success', result);
 
-              return this.setToken(gitHubAccessToken);
+              executor.resolve(this.setToken(gitHubAccessToken));
           })
           .fail(err => {
               console.error('github auth err', err);
-              return Promise.reject(err);
+              executor.reject(err);
           });
+
+        return promise;
       })
     );
   }
@@ -92,6 +99,7 @@ export default class Auth {
    * @return {[type]}                   [description]
    */
   static withToken(gitHubAccessToken) {
+    console.log('with token', gitHubAccessToken);
     var octokatCacheHandler = new OctokatCacheHandler();
 
     octokat(new Octokat({

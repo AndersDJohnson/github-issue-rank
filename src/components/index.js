@@ -1,8 +1,7 @@
 import _ from 'lodash';
 
 import React from 'react';
-import { Router, Route, Link } from 'react-router';
-import { createHashHistory } from 'history';
+import { Link } from 'react-router';
 import Griddle from 'griddle-react';
 import Loader from 'react-loader';
 import { octokat, octokatHelper } from '../factory';
@@ -26,11 +25,7 @@ import {
 
 
 
-var history = createHashHistory();
-
-
-
-class AppRoute extends React.Component {
+export class AppRoute extends React.Component {
 
   constructor(props) {
     super(props);
@@ -39,6 +34,7 @@ class AppRoute extends React.Component {
       user: null,
       authed: false,
       gitHubAccessToken: null,
+      inputGitHubAccessToken: null,
       rateLimit: {},
       reset: new Date(),
       repos: [
@@ -73,8 +69,8 @@ class AppRoute extends React.Component {
           this.setState(state);
           setTimeout(checkRateLimit, 2000);
         },
-        () => {
-          console.error(arguments);
+        (err) => {
+          console.error(err);
         }
       );
     };
@@ -93,15 +89,30 @@ class AppRoute extends React.Component {
     this.setState({showingAuthModal: true});
   }
 
+  setGitHubAccessToken(gitHubAccessToken) {
+    this.setState({
+      gitHubAccessToken: gitHubAccessToken,
+      inputGitHubAccessToken: gitHubAccessToken
+    });
+  }
+
   signIn() {
-    Auth.signIn().then(this.onSignedIn.bind(this));
+    Auth.signIn().then(d => {
+      console.log('sign in data', d);
+      this.setGitHubAccessToken(d.gitHubAccessToken);
+      this.onSignedIn();
+    });
   }
 
   onClickSignOut() {
     console.log('onClickSignOut');
     Auth.signOut().
       then(d => {
-        this.setState({authed: false, user: null})
+        this.setState({
+          authed: false,
+          user: null
+        });
+        this.setGitHubAccessToken(null);
       });
   }
 
@@ -109,7 +120,7 @@ class AppRoute extends React.Component {
     Auth.check(options).
       then(d => {
         console.log('authed', d);
-        this.setState({gitHubAccessToken: d.gitHubAccessToken})
+        this.setGitHubAccessToken(d.gitHubAccessToken);
         this.onSignedIn();
       });
   }
@@ -121,7 +132,8 @@ class AppRoute extends React.Component {
         Auth.setToken(gitHubAccessToken).
           then(data => {
             var {gitHubAccessToken} = data;
-            this.setState({gitHubAccessToken});
+            console.log('auth set token', gitHubAccessToken);
+            this.setGitHubAccessToken(gitHubAccessToken);
             this.onSignedIn();
           });
       },
@@ -153,9 +165,10 @@ class AppRoute extends React.Component {
     this.setState({showingAuthModal: false});
   }
 
-  onChangeGitHubAccessToken(e) {
-    var gitHubAccessToken = e.target.value;
-    this.checkSignIn(gitHubAccessToken);
+  onChangeInputGitHubAccessToken(e) {
+    var inputGitHubAccessToken = e.target.value;
+    this.setState({inputGitHubAccessToken});
+    this.checkSignIn(inputGitHubAccessToken);
   }
 
   render() {
@@ -324,8 +337,8 @@ class AppRoute extends React.Component {
 
             <Input
               type="text"
-              value={this.state.gitHubAccessToken}
-              onChange={this.onChangeGitHubAccessToken.bind(this)}
+              value={this.state.inputGitHubAccessToken}
+              onChange={this.onChangeInputGitHubAccessToken.bind(this)}
             />
 
           </Modal.Body>
@@ -359,7 +372,7 @@ class AppRoute extends React.Component {
 };
 
 
-class NoRoute extends React.Component {
+export class NoRoute extends React.Component {
   componentDidMount() {
     console.log(this.props.params);
   }
@@ -372,7 +385,7 @@ class NoRoute extends React.Component {
 };
 
 
-class LinkComponent extends React.Component {
+export class LinkComponent extends React.Component {
   render() {
     var data = this.data();
     var {owner, repo, number} = this.props.rowData;
@@ -395,7 +408,7 @@ class IssueNumberComponent extends LinkComponent {
   }
 };
 
-class RepoRoute extends React.Component {
+export class RepoRoute extends React.Component {
   constructor(props) {
     super(props);
 
@@ -481,10 +494,24 @@ class RepoRoute extends React.Component {
     return (! this.unmounting) && (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
   }
 
-  showRepo() {
+  refresh() {
+    this.showRepo({
+      refresh: true
+    })
+  }
+
+  showRepo(opts) {
+    opts = opts || {};
+
     var {owner, repo} = this.props.params;
 
-    if (this.sameState(owner, repo)) return;
+    var {refresh} = opts;
+
+    if (!refresh && this.sameState(owner, repo)) return;
+
+    if (refresh) {
+      if (_.isFunction(this.cancel)) this.cancel();
+    }
 
     this.setState({
       loaded: false,
@@ -496,6 +523,7 @@ class RepoRoute extends React.Component {
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
         (err, rows, cancel, progress) => {
+          this.cancel = cancel;
           if (err) {
             return dispatcher.error(err);
           }
@@ -507,6 +535,7 @@ class RepoRoute extends React.Component {
           });
         },
         (err, rows, cancel, progress) => {
+          this.cancel = cancel;
           // console.log('progress', progress);
           if (err) {
             this.setState({loaded: true, anyLoaded: true})
@@ -551,6 +580,8 @@ class RepoRoute extends React.Component {
           </a>
         </h2>
 
+        <button onClick={this.refresh.bind(this)}>refresh</button>
+
         <progress
           value={this.state.progress.value}
           max={this.state.progress.max}
@@ -578,7 +609,7 @@ class RepoRoute extends React.Component {
 };
 
 
-class IssueRoute extends React.Component {
+export class IssueRoute extends React.Component {
 
   constructor(props) {
     super(props);
@@ -709,21 +740,6 @@ class IssueRoute extends React.Component {
         </Modal>
 
       </div>
-    );
-  }
-};
-
-export class RouterComponent extends React.Component {
-  render() {
-    return (
-      <Router history={history}>
-        <Route path="/" component={AppRoute}>
-          <Route path=":owner/:repo" component={RepoRoute}>
-            <Route path=":number" component={IssueRoute}/>
-          </Route>
-          <Route path="*" component={NoRoute}/>
-        </Route>
-      </Router>
     );
   }
 };
