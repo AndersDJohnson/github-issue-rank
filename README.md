@@ -1,5 +1,7 @@
 # github-issue-rank
 
+GitHub issue ranking & voting. https://andrz.me/github-issue-rank
+
 ## References
 
 * https://github.com/isaacs/github/issues/9
