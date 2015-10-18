@@ -508,9 +508,11 @@ export class RepoRoute extends React.Component {
 
   componentWillUnmount () {
     // allows us to ignore an inflight request in scenario 4
-    this.unmounting = true;
     this.owner = null;
     this.repo = null;
+
+    this.unmounting = true;
+    if (_.isFunction(this.cancel)) this.cancel();
   }
 
   sameState(owner, repo) {
@@ -545,7 +547,8 @@ export class RepoRoute extends React.Component {
 
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
-        (err, rows, cancel, progress) => {
+        (err, result) => {
+          var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
           if (err) {
             return dispatcher.error(err);
@@ -557,9 +560,9 @@ export class RepoRoute extends React.Component {
             progress
           });
         },
-        (err, rows, cancel, progress) => {
+        (err, result) => {
+          var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
-          // console.log('progress', progress);
           if (err) {
             this.setState({loaded: true, anyLoaded: true})
             return dispatcher.error(err);
