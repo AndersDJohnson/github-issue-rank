@@ -30,7 +30,7 @@ export class AppRoute extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      error: null,
+      errors: [],
       user: null,
       authed: false,
       gitHubAccessToken: null,
@@ -44,12 +44,32 @@ export class AppRoute extends React.Component {
       showingAuthModal: false
     };
 
+
+    dispatcher.register(payload => {
+      if(dispatcher.type(payload, 'AUTH')) {
+        var errors = this.state.errors;
+        errors = _.filter(errors, error => {
+          if (this.isAuthError(error)) {
+            return false;
+          }
+          return true;
+        });
+        this.setState({errors});
+      }
+    });
+
     dispatcher.register(payload => {
       if(payload.actionType === dispatcher.actionTypes.ERROR) {
         var error = payload.data;
-        this.setState({error});
+        this.setState({
+          errors: this.state.errors.concat([error])
+        });
       }
     });
+  }
+
+  isAuthError(err) {
+    return err.status && (err.status === 401 || err.status === 403);
   }
 
   componentDidMount() {
@@ -158,7 +178,7 @@ export class AppRoute extends React.Component {
   }
 
   dismissAlert() {
-    this.setState({error: null});
+    this.setState({errors: []});
   }
 
   closeAuthModal() {
@@ -188,20 +208,23 @@ export class AppRoute extends React.Component {
       );
     }
 
-    var errorCmp;
-    var error = this.state.error;
-    if (this.state.error) {
-      var message = error.message || error;
-      errorCmp =
-        <Alert bsStyle="danger" onDismiss={this.dismissAlert.bind(this)}>
-          <h4>Oh snap! You got an error!</h4>
-          <p>{message}</p>
-          <p>
-            <Button onClick={this.onClickSignIn.bind(this)} bsStyle="success">Sign In</Button>
-            <span> or </span>
-            <Button onClick={this.dismissAlert.bind(this)}>Hide Alert</Button>
-          </p>
-        </Alert>;
+    var errorCmps = [];
+    var error = this.state.errors;
+    if (this.state.errors) {
+      this.state.errors.forEach(error => {
+        var message = error.message || error;
+        var errorCmp =
+          <Alert bsStyle="danger" onDismiss={this.dismissAlert.bind(this)}>
+            <h4>Oh snap! You got an error!</h4>
+            <p>{message}</p>
+            <p>
+              <Button onClick={this.onClickSignIn.bind(this)} bsStyle="success">Sign In</Button>
+              <span> or </span>
+              <Button onClick={this.dismissAlert.bind(this)}>Hide Alert</Button>
+            </p>
+          </Alert>;
+        errorCmps.push(errorCmp);
+      })
     }
 
     var authModalSignInCmp;
@@ -351,7 +374,7 @@ export class AppRoute extends React.Component {
           </Modal.Footer>
         </Modal>
 
-        {errorCmp}
+        {errorCmps}
 
         <div>
           <progress id="gh-api-limit"
