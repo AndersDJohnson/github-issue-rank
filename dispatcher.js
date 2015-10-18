@@ -5,8 +5,19 @@ export class AppDispatcher extends Dispatcher {
   constructor() {
     super();
     this.actionTypes = {
-      ERROR: 'ERROR'
+      ERROR: 'ERROR',
+      AUTH: 'AUTH'
     };
+  }
+
+  type(action, type) {
+    return action.actionType && action.actionType === this.actionTypes[type];
+  }
+
+  auth() {
+    this.dispatch({
+      actionType: this.actionTypes.AUTH
+    });
   }
 
   error(err) {

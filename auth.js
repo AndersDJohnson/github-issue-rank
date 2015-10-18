@@ -1,11 +1,12 @@
 import Octokat from 'octokat';
 import { OAuth } from 'oauthio-web';
 import assign from 'object-assign';
+import { Promise } from 'es6-promise';
 import { OctokatCacheHandler } from './octokat-cache-handler';
 import { OctokatHelper } from './octokat-helper';
 import { octokat, octokatHelper } from './factory';
 import Options from './options';
-import { Promise } from 'es6-promise';
+import { dispatcher } from './dispatcher';
 
 var cacheKey = 'ghir-github-access-token';
 
@@ -73,6 +74,8 @@ export default class Auth {
           .done(result => {
               var gitHubAccessToken = Auth.gitHubAccessToken = result.access_token;
               console.log('github auth success', result);
+
+              dispatcher.auth();
 
               executor.resolve(this.setToken(gitHubAccessToken));
           })

@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import async from 'async';
+import compose from './compose';
 
 class OctokatMemoryCache {
   constructor() {
@@ -43,9 +44,9 @@ class OctokatHelper {
       var cancel = () => {};
       var progress = {value: 1, max: 1};
       cached.forEach(() => {
-        each(null, cached, cancel, progress);
+        each(null, {data: cached, cancel, progress});
       });
-      done(null, cached, cancel, progress);
+      done(null, {data: cached, cancel, progress});
       return;
     }
 
@@ -58,17 +59,19 @@ class OctokatHelper {
     };
 
     this.fetchAll(cacheKey, requester,
-      (err, data, cancel, progress) => {
+      (err, result) => {
         if (err) return done(this.parseError(err));
+        var {data, cancel, progress} = result;
         data.forEach(d => {
           d.owner = owner;
           d.repo = repo;
         });
-        each(err, data, cancel, progress);
+        each(err, {data, cancel, progress});
       },
-      (err, data, cancel, progress) => {
+      (err, result) => {
+        var {data, cancel, progress} = result;
         this.octokatMemoryCache.add(cacheKey, data);
-        done(err, data, cancel, progress);
+        done(err, {data, cancel, progress});
       }
     );
   }
@@ -81,9 +84,9 @@ class OctokatHelper {
       var cancel = () => {};
       var progress = {value: 1, max: 1};
       cached.forEach(() => {
-        each(null, cached, cancel, progress);
+        each(null, {data: cached, cancel, progress});
       });
-      done(null, cached, cancel, progress);
+      done(null, {data: cached, cancel, progress});
       return;
     }
 
@@ -95,29 +98,31 @@ class OctokatHelper {
     };
 
     this.fetchAll(cacheKey, requester,
-      (err, data, cancel, progress) => {
+      (err, result) => {
         if (err) return done(this.parseError(err));
+        var {data, cancel, progress} = result;
         data.forEach(d => {
           d.owner = owner;
           d.repo = repo;
         });
-        each(err, data, cancel, progress);
+        each(err, {data, cancel, progress});
       },
-      (err, data, cancel, progress) => {
+      (err, result) => {
+        var {data, cancel, progress} = result;
         this.octokatMemoryCache.add(cacheKey, data);
-        done(err, data, cancel, progress);
+        done(err, {data, cancel, progress});
       }
     );
   }
 
   getIssuesThenComments(
-    owner, repo, eachIssues, eachComments, eachIssueComments, done
+    owner, repo, onProgress, done
   ) {
     done = done || () => {};
 
     var cancelled = false;
     var cancel = () => {
-      cancelled = true;
+      cancelled = true; // i then c
     };
 
     var totalProgress = {
@@ -127,13 +132,20 @@ class OctokatHelper {
 
     this.getIssues(
       owner, repo,
-      (err, issues, cancel, progress) => {
+      (err, result) => {
         if (err) return done(this.parseError(err));
+        var {data: issues, cancel, progress} = result;
         issues = issues.map(issue => ({issue}));
-        eachIssues(err, issues, cancel, progress);
+        onProgress(err, {
+          type: 'issue',
+          data: issues,
+          cancel,
+          progress
+        });
       },
-      (err, issues, cancel, progress) => {
+      (err, result) => {
         if (err) return done(this.parseError(err));
+        var {data: issues, cancel: cancel2, progress} = result;
 
         var numIssues = issues.length;
 
@@ -153,38 +165,51 @@ class OctokatHelper {
             if (issue.comments) {
               this.getComments(
                 owner, repo, issue.number,
-                (err, comments, cancel2, progress) => {
+                (err, result) => {
                   if (err) return done(this.parseError(err));
+                  var {data: comments, cancel: cancel3, progress} = result;
                   totalProgress.value += (1 / (progress.max));
-                  var cancel1and2 = () => {
-                    cancel();
-                    cancel2();
-                  };
                   result.comments = comments;
                   memo.push(result);
-                  eachComments(err, memo, cancel1and2, totalProgress, issue);
+                  onProgress(err, {
+                    type: 'comments',
+                    data: memo,
+                    cancel: compose(cancel, cancel2, cancel3),
+                    progress: totalProgress
+                  });
                 },
-                (err, comments, cancel2, progress) => {
+                (err, result) => {
                   if (err) return done(this.parseError(err));
-                  var cancel1and2 = () => {
-                    cancel();
-                    cancel2();
-                  };
+                  var {data: comments, cancel: cancel3, progress} = result;
                   result.comments = comments;
-                  eachIssueComments(err, memo, cancel1and2, totalProgress, issue);
+                  onProgress(err, {
+                    type: 'issue-comments',
+                    data: memo,
+                    cancel: compose(cancel, cancel2, cancel3),
+                    progress: totalProgress
+                  });
                   cb(err, memo);
                 }
               );
             }
             else {
               totalProgress.value += 1;
-              eachComments(null, m2, cancel, totalProgress, issue, null);
+              onProgress(null, {
+                type: 'comments',
+                data: memo,
+                cancel,
+                progress: totalProgress
+              });
               cb(err, memo);
             }
           },
           (err, results) => {
             // if (err) return done(this.parseError(err));
-            done(err, results, cancel, totalProgress);
+            done(this.parseError(err), {
+              data: results,
+              cancel: compose(cancel, cancel2),
+              progress: totalProgress
+            });
           }
         );
       }
@@ -198,7 +223,7 @@ class OctokatHelper {
 
     var cancelled = false;
     var cancel = () => {
-      cancelled = true;
+      cancelled = true; // fetchall
     };
 
     var progress = {
@@ -222,24 +247,28 @@ class OctokatHelper {
               progress.max = 1;
             }
             allData = allData.concat(data);
-            each(null, allData, cancel, progress);
+            each(null, {
+              data: allData,
+              cancel,
+              progress
+            });
             promiser = data.nextPage;
             cb();
           },
           (err) => {
             if (err) return cb(this.parseError(err));
-            each(err, null, cancel, progress);
+            each(err, {data: null, cancel, progress});
             cb(err, null);
           }
         );
       },
       () => {
-        return promiser;
+        return (! cancelled) && promiser;
       },
       (err) => {
         if (err) return done(this.parseError(err));
 
-        done(err, allData, cancel, progress);
+        done(err, {data: allData, cancel, progress});
       }
     );
   }
