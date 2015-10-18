@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import async from 'async';
+import compose from './compose';
 
 class OctokatMemoryCache {
   constructor() {
@@ -121,7 +122,7 @@ class OctokatHelper {
 
     var cancelled = false;
     var cancel = () => {
-      cancelled = true;
+      cancelled = true; // i then c
     };
 
     var totalProgress = {
@@ -144,7 +145,7 @@ class OctokatHelper {
       },
       (err, result) => {
         if (err) return done(this.parseError(err));
-        var {data: issues, cancel, progress} = result;
+        var {data: issues, cancel: cancel2, progress} = result;
 
         var numIssues = issues.length;
 
@@ -166,33 +167,25 @@ class OctokatHelper {
                 owner, repo, issue.number,
                 (err, result) => {
                   if (err) return done(this.parseError(err));
-                  var {data: comments, cancel: cancel2, progress} = result;
+                  var {data: comments, cancel: cancel3, progress} = result;
                   totalProgress.value += (1 / (progress.max));
-                  var cancel1and2 = () => {
-                    cancel();
-                    cancel2();
-                  };
                   result.comments = comments;
                   memo.push(result);
                   onProgress(err, {
                     type: 'comments',
                     data: memo,
-                    cancel: cancel1and2,
+                    cancel: compose(cancel, cancel2, cancel3),
                     progress: totalProgress
                   });
                 },
                 (err, result) => {
                   if (err) return done(this.parseError(err));
-                  var {data: comments, cancel: cancel2, progress} = result;
-                  var cancel1and2 = () => {
-                    cancel();
-                    cancel2();
-                  };
+                  var {data: comments, cancel: cancel3, progress} = result;
                   result.comments = comments;
                   onProgress(err, {
                     type: 'issue-comments',
                     data: memo,
-                    cancel: cancel1and2,
+                    cancel: compose(cancel, cancel2, cancel3),
                     progress: totalProgress
                   });
                   cb(err, memo);
@@ -204,7 +197,7 @@ class OctokatHelper {
               onProgress(null, {
                 type: 'comments',
                 data: memo,
-                cancel: cancel,
+                cancel,
                 progress: totalProgress
               });
               cb(err, memo);
@@ -214,7 +207,7 @@ class OctokatHelper {
             // if (err) return done(this.parseError(err));
             done(this.parseError(err), {
               data: results,
-              cancel,
+              cancel: compose(cancel, cancel2),
               progress: totalProgress
             });
           }
@@ -230,7 +223,7 @@ class OctokatHelper {
 
     var cancelled = false;
     var cancel = () => {
-      cancelled = true;
+      cancelled = true; // fetchall
     };
 
     var progress = {
