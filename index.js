@@ -11,7 +11,7 @@ import { octokat, octokatHelper } from './factory';
 
 import * as helper from './helper';
 
-import { RouterComponent } from './components';
+import { RouterComponent } from './components/router';
 
 import Options from './options';
 
@@ -22,7 +22,7 @@ var GitHubIssueRank = (function () {
 
 
   // TODO: Use a global promise to queue work until Octokat instantiated.
-  var githubAccessToken;
+  var gitHubAccessToken;
 
 
   out.render = function () {
