@@ -27,7 +27,7 @@ var GitHubIssueRank = (function () {
 
   out.render = function () {
     ReactDOM.render(
-      <RouterComponent/>,
+      <RouterComponent />,
       document.getElementById('app')
     );
   };

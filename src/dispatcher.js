@@ -6,12 +6,13 @@ export class AppDispatcher extends Dispatcher {
     super();
     this.actionTypes = {
       ERROR: 'ERROR',
-      AUTH: 'AUTH'
+      AUTH: 'AUTH',
+      SIGNED_IN: 'SIGNED_IN'
     };
   }
 
   type(action, type) {
-    return action.actionType && action.actionType === this.actionTypes[type];
+    return action.actionType && (action.actionType === type) || (this.actionTypes[type] === type);
   }
 
   auth() {
