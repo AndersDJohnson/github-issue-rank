@@ -12,7 +12,7 @@ export class AppDispatcher extends Dispatcher {
   }
 
   type(action, type) {
-    return action.actionType && (action.actionType === type) || (this.actionTypes[type] === type);
+    return action.actionType && ((action.actionType === type) || (this.actionTypes[action.actionType] === type));
   }
 
   auth() {
