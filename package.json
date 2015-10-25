@@ -28,24 +28,23 @@
   },
   "devDependencies": {
     "babel": "^5.8.23",
-    "browserify": "~11.2.0",
     "babelify": "~6.3.0",
-    "watchify": "~3.4.0",
-    "debowerify": "~1.3.1"
+    "browserify": "~11.2.0",
+    "debowerify": "~1.3.1",
+    "npm-run-all": "^1.2.12",
+    "watchify": "~3.4.0"
   },
   "scripts": {
     "test": "node build/test.bundle.js",
-    "build": "npm ru build-src",
-    "cp-src": "cp -r src/* public",
-    "cp-node": "mkdir -p public/node_modules/font-awesome && cp -r node_modules/font-awesome public/node_modules",
-    "css": "lessc src/less/index.less public/css/index.css",
-    "public": "npm ru cp-src && npm ru cp-node && npm ru css",
-    "browserify-src": "browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
-    "build-src": "npm ru public && npm ru browserify-src",
-    "build-test": "browserify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js",
-    "watch": "npm ru watch-src",
-    "watch-src": "watchify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
-    "watch-test": "watchify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js"
+    "build": "npm-run-all build:**:*",
+    "build:src:cp:public": "cp -r src/* public",
+    "build:src:cp:node": "mkdir -p public/node_modules/font-awesome && cp -r node_modules/font-awesome public/node_modules",
+    "build:src:css": "lessc src/less/index.less public/css/index.css",
+    "build:src:brfy": "browserify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
+    "build:test:brfy": "browserify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js",
+    "watch": "npm-run-all --parallel watch:**:*",
+    "watch:src": "watchify --debug src/browser.js -t babelify -t debowerify --outfile public/browser.bundle.js",
+    "watch:test": "watchify --debug test/index.js -t babelify -t debowerify --outfile build/test.bundle.js"
   },
   "author": "Anders D. Johnson",
   "license": "MIT"
