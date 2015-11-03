@@ -39,7 +39,8 @@ export class AppRoute extends React.Component {
       reset: new Date(),
       repos: [
         'oauth-io/oauth-js',
-        'isaacs/github'
+        'isaacs/github',
+        'AndersDJohnson/github-issue-rank'
       ],
       showingAuthModal: false
     };
