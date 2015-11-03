@@ -69,6 +69,7 @@ class OctokatHelper {
         each(err, {data, cancel, progress});
       },
       (err, result) => {
+        if (err) return done(this.parseError(err));
         var {data, cancel, progress} = result;
         this.octokatMemoryCache.add(cacheKey, data);
         done(err, {data, cancel, progress});
@@ -108,6 +109,7 @@ class OctokatHelper {
         each(err, {data, cancel, progress});
       },
       (err, result) => {
+        if (err) return done(this.parseError(err));
         var {data, cancel, progress} = result;
         this.octokatMemoryCache.add(cacheKey, data);
         done(err, {data, cancel, progress});
@@ -134,7 +136,7 @@ class OctokatHelper {
       owner, repo,
       (err, result) => {
         if (err) return done(this.parseError(err));
-        var {data: issues, cancel, progress} = result;
+        var {data: issues, cancel, progress} = result || {};
         issues = issues.map(issue => ({issue}));
         onProgress(err, {
           type: 'issue',

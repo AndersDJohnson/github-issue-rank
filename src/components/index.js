@@ -561,6 +561,7 @@ export class RepoRoute extends React.Component {
           });
         },
         (err, result) => {
+          if (err) throw err;
           var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
           if (err) {
@@ -672,10 +673,12 @@ export class IssueRoute extends React.Component {
 
       octokatHelper().getComments(
         owner, repo, number,
-        (err, comments, cancel) => {
+        (err, results, cancel) => {
           if (err) {
             return dispatcher.error(err);
           }
+
+          var {data: comments} = results;
 
           // console.log('each', err, comments, cancel);
           comments = helper.mapCommentsHaveVotes(comments);
