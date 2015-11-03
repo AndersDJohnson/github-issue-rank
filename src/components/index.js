@@ -549,11 +549,9 @@ export class RepoRoute extends React.Component {
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
         (err, result) => {
+          if (err) return dispatcher.error(err);
           var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
-          if (err) {
-            return dispatcher.error(err);
-          }
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
