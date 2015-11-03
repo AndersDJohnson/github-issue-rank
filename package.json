@@ -9,7 +9,9 @@
   "dependencies": {
     "async": "~1.4.2",
     "bootstrap": "^3.3.5",
+    "cors": "^2.7.1",
     "es6-promise": "^3.0.2",
+    "express": "^4.13.3",
     "flux": "^2.1.1",
     "font-awesome": "^4.4.0",
     "griddle": "~0.1.2",
