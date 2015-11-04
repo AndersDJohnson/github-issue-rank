@@ -21,10 +21,10 @@ export var hasVote = function (str) {
 
 
 export var mapCommentsHaveVotes = function (comments) {
-  return comments.map(c => {
+  return comments ? comments.map(c => {
     c.hasVote = hasVote(c.body);
     return c;
-  });
+  }) : [];
 };
 
 
@@ -77,10 +77,12 @@ export var showRepo = function (owner, repo, each, callback) {
     owner,
     repo,
     (err, result) => {
+      if (err) return callback(err);
       var {data, cancel, progress} = result;
       each(err, {data: mapResultsToRows(merge(data)), cancel, progress});
     },
     (err, result) => {
+      if (err) return callback(err);
       var {data, cancel, progress} = result;
       callback(err, {data: mapResultsToRows(merge(data)), cancel, progress});
     }

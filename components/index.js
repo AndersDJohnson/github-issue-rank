@@ -39,7 +39,8 @@ export class AppRoute extends React.Component {
       reset: new Date(),
       repos: [
         'oauth-io/oauth-js',
-        'isaacs/github'
+        'isaacs/github',
+        'AndersDJohnson/github-issue-rank'
       ],
       showingAuthModal: false
     };
@@ -548,11 +549,9 @@ export class RepoRoute extends React.Component {
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
         (err, result) => {
+          if (err) return dispatcher.error(err);
           var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
-          if (err) {
-            return dispatcher.error(err);
-          }
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
@@ -561,6 +560,7 @@ export class RepoRoute extends React.Component {
           });
         },
         (err, result) => {
+          if (err) throw err;
           var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
           if (err) {
@@ -672,10 +672,12 @@ export class IssueRoute extends React.Component {
 
       octokatHelper().getComments(
         owner, repo, number,
-        (err, comments, cancel) => {
+        (err, results, cancel) => {
           if (err) {
             return dispatcher.error(err);
           }
+
+          var {data: comments} = results;
 
           // console.log('each', err, comments, cancel);
           comments = helper.mapCommentsHaveVotes(comments);

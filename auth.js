@@ -107,7 +107,8 @@ export default class Auth {
 
     octokat(new Octokat({
       token: gitHubAccessToken,
-      cacheHandler: octokatCacheHandler
+      cacheHandler: octokatCacheHandler,
+      // rootURL: 'http://localhost:9000/api.github.com'
     }));
 
     octokatHelper(new OctokatHelper(octokat()));
