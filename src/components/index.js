@@ -38,7 +38,8 @@ export class AppRoute extends React.Component {
       reset: new Date(),
       repos: [
         'oauth-io/oauth-js',
-        'isaacs/github'
+        'isaacs/github',
+        'AndersDJohnson/github-issue-rank'
       ]
     };
 
@@ -75,16 +76,8 @@ export class AppRoute extends React.Component {
 
     dispatcher.register(payload => {
       if (dispatcher.type(payload, 'SIGNED_IN')) {
-        // debugger;
-        var { user, gitHubAccessToken } = payload.data;
-        this.setState({ user, gitHubAccessToken });
-        // Auth.setToken(gitHubAccessToken).
-        //   then(data => {
-          //   var {gitHubAccessToken} = data;
-          //   console.log('auth set token', gitHubAccessToken);
-          //   this.setGitHubAccessToken(gitHubAccessToken);
-          //   this.onSignedIn();
-          // });
+        var { gitHubAccessToken } = payload.data;
+        this.setState({ gitHubAccessToken });
         console.log('auth set token', gitHubAccessToken);
         this.onSignedIn();
       }
@@ -181,9 +174,10 @@ export class AppRoute extends React.Component {
 
   onSignedIn() {
     this.setState({authed: true});
-
-    octokat().user.fetch().then(user => {
+    return octokat().user.fetch().then(user => {
       this.setState({user});
+    }, err => {
+      console.error(err);
     });
   }
 
@@ -481,11 +475,9 @@ export class RepoRoute extends React.Component {
     Auth.wait().then(() => {
       helper.showRepo(owner, repo,
         (err, result) => {
+          if (err) return dispatcher.error(err);
           var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
-          if (err) {
-            return dispatcher.error(err);
-          }
           if ( ! this.sameState(owner, repo)) return cancel();
           this.showRows(err, rows);
           this.setState({
@@ -494,6 +486,7 @@ export class RepoRoute extends React.Component {
           });
         },
         (err, result) => {
+          if (err) throw err;
           var {data: rows, cancel, progress} = result;
           this.cancel = cancel;
           if (err) {
@@ -578,8 +571,32 @@ export class AuthRoute extends React.Component {
     };
   }
 
+  componentDidMount() {
+    dispatcher.register(payload => {
+      if (dispatcher.type(payload, 'SIGNED_IN')) {
+        return octokat().user.fetch().then(user => {
+          this.setState({user});
+        }, err => {
+          console.error(err);
+        });
+      }
+    });
+  }
+
   closeAuthModal() {
     history.pushState(null, '/');
+  }
+
+  onClickSignOut() {
+    console.log('onClickSignOut');
+    Auth.signOut().
+      then(d => {
+        this.setState({
+          authed: false,
+          user: null
+        });
+        this.setGitHubAccessToken(null);
+      });
   }
 
   onChangeInputGitHubAccessToken(e) {
@@ -604,9 +621,7 @@ export class AuthRoute extends React.Component {
       dispatcher.dispatch({
         actionType: 'SIGNED_IN',
         data: {
-          gitHubAccessToken: gitHubAccessToken,
-          // TODO: Get & pass user.
-          user: {}
+          gitHubAccessToken: gitHubAccessToken
         }
       });
     },
@@ -638,7 +653,7 @@ export class AuthRoute extends React.Component {
               href={this.state.user.htmlUrl}
               target="_blank"
             >
-              <img src={this.props.user.avatarUrl}
+              <img src={this.state.user.avatarUrl}
                 className="ghir-auth-user-avatar"
               ></img>
             </a>
@@ -744,11 +759,12 @@ export class IssueRoute extends React.Component {
 
       octokatHelper().getComments(
         owner, repo, number,
-        (err, result) => {
-          var {data: comments, cancel} = result;
+        (err, results, cancel) => {
           if (err) {
             return dispatcher.error(err);
           }
+
+          var {data: comments} = results;
 
           // console.log('each', err, comments, cancel);
           comments = helper.mapCommentsHaveVotes(comments);

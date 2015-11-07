@@ -69,6 +69,7 @@ class OctokatHelper {
         each(err, {data, cancel, progress});
       },
       (err, result) => {
+        if (err) return done(this.parseError(err));
         var {data, cancel, progress} = result;
         this.octokatMemoryCache.add(cacheKey, data);
         done(err, {data, cancel, progress});
@@ -108,6 +109,7 @@ class OctokatHelper {
         each(err, {data, cancel, progress});
       },
       (err, result) => {
+        if (err) return done(this.parseError(err));
         var {data, cancel, progress} = result;
         this.octokatMemoryCache.add(cacheKey, data);
         done(err, {data, cancel, progress});
@@ -134,7 +136,7 @@ class OctokatHelper {
       owner, repo,
       (err, result) => {
         if (err) return done(this.parseError(err));
-        var {data: issues, cancel, progress} = result;
+        var {data: issues, cancel, progress} = result || {};
         issues = issues.map(issue => ({issue}));
         onProgress(err, {
           type: 'issue',
@@ -158,7 +160,7 @@ class OctokatHelper {
               cb(null, memo);
               return;
             }
-            var result = {
+            var memoResult = {
               issue
             };
             var m2 = () => {};
@@ -169,8 +171,8 @@ class OctokatHelper {
                   if (err) return done(this.parseError(err));
                   var {data: comments, cancel: cancel3, progress} = result;
                   totalProgress.value += (1 / (progress.max));
-                  result.comments = comments;
-                  memo.push(result);
+                  memoResult.comments = comments;
+                  memo.push(memoResult);
                   onProgress(err, {
                     type: 'comments',
                     data: memo,
@@ -181,7 +183,7 @@ class OctokatHelper {
                 (err, result) => {
                   if (err) return done(this.parseError(err));
                   var {data: comments, cancel: cancel3, progress} = result;
-                  result.comments = comments;
+                  memoResult.comments = comments;
                   onProgress(err, {
                     type: 'issue-comments',
                     data: memo,

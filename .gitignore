@@ -8,6 +8,8 @@ build/**
 *.bak
 *.private.*
 
+server/cache
+
 
 # Logs
 logs
