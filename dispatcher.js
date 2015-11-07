@@ -6,7 +6,8 @@ export class AppDispatcher extends Dispatcher {
     super();
     this.actionTypes = {
       ERROR: 'ERROR',
-      AUTH: 'AUTH'
+      AUTH: 'AUTH',
+      SIGNED_IN: 'SIGNED_IN'
     };
   }
 

@@ -15,9 +15,14 @@ var promise = new Promise((resolve, reject) => {
   executor = {resolve, reject};
 });
 
+var _gitHubAccessToken;
+
 export default class Auth {
 
-  static gitHubAccessToken;
+  static gitHubAccessToken(value) {
+    if (value) _gitHubAccessToken = value;
+    return _gitHubAccessToken;
+  }
 
   static wait() {
     return promise;
@@ -27,12 +32,13 @@ export default class Auth {
     var options = assign({}, Options, params);
     console.log('check auth', options);
 
-    var gitHubAccessToken = localStorage.getItem(cacheKey, gitHubAccessToken);
+    var cachedGitHubAccessToken = localStorage.getItem(cacheKey);
 
-    console.log('cached gitHubAccessToken', gitHubAccessToken);
+    console.log('cached gitHubAccessToken', cachedGitHubAccessToken);
 
-    if (gitHubAccessToken) {
-      return this.withToken(gitHubAccessToken);
+    // TODO: Validate token.
+    if (cachedGitHubAccessToken) {
+      return this.setToken(cachedGitHubAccessToken);
     }
 
     if (! options.noAnonymous) {
@@ -72,12 +78,12 @@ export default class Auth {
 
         OAuth.popup('github')
           .done(result => {
-              var gitHubAccessToken = Auth.gitHubAccessToken = result.access_token;
+              var resultGitHubAccessToken = result.access_token;
               console.log('github auth success', result);
 
               dispatcher.auth();
 
-              executor.resolve(this.setToken(gitHubAccessToken));
+              executor.resolve(this.setToken(resultGitHubAccessToken));
           })
           .fail(err => {
               console.error('github auth err', err);
@@ -89,31 +95,37 @@ export default class Auth {
     );
   }
 
-  static setToken(gitHubAccessToken) {
+  static setToken(paramGitHubAccessToken) {
+    Auth.gitHubAccessToken(paramGitHubAccessToken);
     try {
-      localStorage.setItem(cacheKey, gitHubAccessToken);
+      localStorage.setItem(cacheKey, paramGitHubAccessToken);
     }
-    catch (e) {}
-    return this.withToken(gitHubAccessToken);
+    catch (e) {
+      console.warn(e);
+    }
+    return this.withToken(paramGitHubAccessToken);
   }
 
   /**
-   * @param  {[type]} gitHubAccessToken GitHub access token, else null for guest.
+   * @param  {[type]} paramGitHubAccessToken GitHub access token, else null for guest.
    * @return {[type]}                   [description]
    */
-  static withToken(gitHubAccessToken) {
-    console.log('with token', gitHubAccessToken);
+  static withToken(paramGitHubAccessToken) {
+    console.log('with token', paramGitHubAccessToken);
+
+    paramGitHubAccessToken = paramGitHubAccessToken || Auth.gitHubAccessToken();
+
     var octokatCacheHandler = new OctokatCacheHandler();
 
     octokat(new Octokat({
-      token: gitHubAccessToken,
+      token: paramGitHubAccessToken,
       cacheHandler: octokatCacheHandler,
       // rootURL: 'http://localhost:9000/api.github.com'
     }));
 
     octokatHelper(new OctokatHelper(octokat()));
 
-    var res = { gitHubAccessToken };
+    var res = { gitHubAccessToken: paramGitHubAccessToken };
 
     executor.resolve(res);
 

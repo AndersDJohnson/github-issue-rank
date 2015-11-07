@@ -7,6 +7,7 @@ import Loader from 'react-loader';
 import { octokat, octokatHelper } from '../factory';
 import * as helper from '../helper';
 import Auth from '../auth';
+import { history, linker } from './router';
 import { dispatcher } from '../dispatcher';
 
 import {
@@ -24,7 +25,6 @@ import {
 } from 'react-bootstrap';
 
 
-
 export class AppRoute extends React.Component {
 
   constructor(props) {
@@ -34,15 +34,13 @@ export class AppRoute extends React.Component {
       user: null,
       authed: false,
       gitHubAccessToken: null,
-      inputGitHubAccessToken: null,
       rateLimit: {},
       reset: new Date(),
       repos: [
         'oauth-io/oauth-js',
         'isaacs/github',
         'AndersDJohnson/github-issue-rank'
-      ],
-      showingAuthModal: false
+      ]
     };
 
 
@@ -76,6 +74,15 @@ export class AppRoute extends React.Component {
   componentDidMount() {
     this.checkAuth();
 
+    dispatcher.register(payload => {
+      if (dispatcher.type(payload, 'SIGNED_IN')) {
+        var { gitHubAccessToken } = payload.data;
+        this.setState({ gitHubAccessToken });
+        console.log('auth set token', gitHubAccessToken);
+        this.onSignedIn();
+      }
+    });
+
     var checkRateLimit = () => {
       if (!octokat()) {
         setTimeout(checkRateLimit, 2000);
@@ -107,7 +114,7 @@ export class AppRoute extends React.Component {
   }
 
   showAuthModal() {
-    this.setState({showingAuthModal: true});
+    history.pushState(null, '/auth');
   }
 
   setGitHubAccessToken(gitHubAccessToken) {
@@ -167,9 +174,10 @@ export class AppRoute extends React.Component {
 
   onSignedIn() {
     this.setState({authed: true});
-
-    octokat().user.fetch().then(user => {
+    return octokat().user.fetch().then(user => {
       this.setState({user});
+    }, err => {
+      console.error(err);
     });
   }
 
@@ -182,16 +190,6 @@ export class AppRoute extends React.Component {
     this.setState({errors: []});
   }
 
-  closeAuthModal() {
-    this.setState({showingAuthModal: false});
-  }
-
-  onChangeInputGitHubAccessToken(e) {
-    var inputGitHubAccessToken = e.target.value;
-    this.setState({inputGitHubAccessToken});
-    this.checkSignIn(inputGitHubAccessToken);
-  }
-
   render() {
     var children = this.props.children;
 
@@ -201,7 +199,7 @@ export class AppRoute extends React.Component {
           {this.state.repos.map(r => {
             return (
               <li key={r}>
-                <Link to={'/' + r}>{r}</Link>
+                <Link to={linker.github('/' + r)}>{r}</Link>
               </li>
             );
           })}
@@ -219,57 +217,13 @@ export class AppRoute extends React.Component {
             <h4>Oh snap! You got an error!</h4>
             <p>{message}</p>
             <p>
-              <Button onClick={this.onClickSignIn.bind(this)} bsStyle="success">Sign In</Button>
+              <Link to={linker.auth()}>Sign In</Link>
               <span> or </span>
               <Button onClick={this.dismissAlert.bind(this)}>Hide Alert</Button>
             </p>
           </Alert>;
         errorCmps.push(errorCmp);
       })
-    }
-
-    var authModalSignInCmp;
-    if (! this.state.user) {
-      authModalSignInCmp = (
-        <Button
-          bsStyle="success"
-          onClick={this.signIn.bind(this)}
-        >
-          Sign In to GitHub via OAuth.io
-        </Button>
-      );
-    }
-    else {
-      authModalSignInCmp = (
-        <div>
-          <div>
-            <a
-              href={this.state.user.htmlUrl}
-              target="_blank"
-            >
-              <img src={this.state.user.avatarUrl}
-                className="ghir-auth-user-avatar"
-              ></img>
-            </a>
-          </div>
-          <div>
-            <a
-              href={this.state.user.htmlUrl}
-              target="_blank"
-            >
-              @{this.state.user.login}
-            </a>
-          </div>
-          <div>
-            <Button
-              bsStyle="success"
-              onClick={this.onClickSignOut.bind(this)}
-            >
-              <i className="fa fa-sign-out"></i> Sign Out
-            </Button>
-          </div>
-        </div>
-      );
     }
 
     var authBarCmp;
@@ -347,34 +301,6 @@ export class AppRoute extends React.Component {
           </CollapsibleNav>
         </Navbar>
 
-        <Modal show={this.state.showingAuthModal} onHide={this.closeAuthModal.bind(this)}>
-          <Modal.Header closeButton>
-            <Modal.Title>Authentication</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-
-            {authModalSignInCmp}
-
-            <hr />
-
-            <p>Or provide an access token:</p>
-
-            <Input
-              type="text"
-              value={this.state.inputGitHubAccessToken}
-              onChange={this.onChangeInputGitHubAccessToken.bind(this)}
-            />
-
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              onClick={this.closeAuthModal.bind(this)}
-            >
-              Close
-            </Button>
-          </Modal.Footer>
-        </Modal>
-
         {errorCmps}
 
         <div>
@@ -413,11 +339,11 @@ export class LinkComponent extends React.Component {
   render() {
     var data = this.data();
     var {owner, repo, number} = this.props.rowData;
-    var href = '#/' + owner + '/' + repo + '/' + number;
+    var href = linker.github('/' + owner + '/' + repo + '/' + number);
     return (
-      <a href={href}>
+      <Link to={href}>
         {data}
-      </a>
+      </Link>
     );
   }
   data() {
@@ -498,12 +424,12 @@ export class RepoRoute extends React.Component {
   }
 
   componentDidUpdate() {
-    this.unmounting = false;
+    // this.setState({unmounting: false});
     this.showRepo();
   }
 
   componentDidMount() {
-    this.unmounting = false;
+    this.setState({unmounting: false});
     this.showRepo();
   }
 
@@ -512,12 +438,12 @@ export class RepoRoute extends React.Component {
     this.owner = null;
     this.repo = null;
 
-    this.unmounting = true;
+    this.setState({unmounting: true});
     if (_.isFunction(this.cancel)) this.cancel();
   }
 
   sameState(owner, repo) {
-    return (! this.unmounting) && (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
+    return (! this.state.unmounting) && (owner && (owner === this.state.owner)) && (repo && (repo === this.state.repo));
   }
 
   refresh() {
@@ -580,7 +506,7 @@ export class RepoRoute extends React.Component {
   }
 
   showRows(err, rows) {
-    if (! this.unmounting) {
+    if (! this.state.unmounting) {
       this.setState({
         rows
       });
@@ -595,7 +521,7 @@ export class RepoRoute extends React.Component {
     return (
       <div className="ghir-route-repo">
         <h2>
-          <Link to={'/' + owner + '/' + repo}>
+          <Link to={linker.github('/' + owner + '/' + repo)}>
             {owner}/{repo}
           </Link>
           <a href={'https://github.com/' + owner + '/' + repo}
@@ -635,6 +561,159 @@ export class RepoRoute extends React.Component {
 };
 
 
+export class AuthRoute extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      inputGitHubAccessToken: Auth.gitHubAccessToken(),
+      user: null
+    };
+  }
+
+  componentDidMount() {
+    dispatcher.register(payload => {
+      if (dispatcher.type(payload, 'SIGNED_IN')) {
+        return octokat().user.fetch().then(user => {
+          this.setState({user});
+        }, err => {
+          console.error(err);
+        });
+      }
+    });
+  }
+
+  closeAuthModal() {
+    history.pushState(null, '/');
+  }
+
+  onClickSignOut() {
+    console.log('onClickSignOut');
+    Auth.signOut().
+      then(d => {
+        this.setState({
+          authed: false,
+          user: null
+        });
+        this.setGitHubAccessToken(null);
+      });
+  }
+
+  onChangeInputGitHubAccessToken(e) {
+    var inputGitHubAccessToken = e.target.value;
+    this.setState({inputGitHubAccessToken});
+    dispatcher.dispatch({
+      actionType: 'CHECK_SIGN_IN',
+      data: {
+        gitHubAccessToken: inputGitHubAccessToken
+      }
+    });
+  }
+
+  signIn() {
+    Auth.signIn().then(data => {
+      console.log('sign in data', data);
+      var {gitHubAccessToken} = data;
+      this.setState({
+        gitHubAccessToken,
+        inputGitHubAccessToken: gitHubAccessToken
+      });
+      dispatcher.dispatch({
+        actionType: 'SIGNED_IN',
+        data: {
+          gitHubAccessToken: gitHubAccessToken
+        }
+      });
+    },
+    (err) => {
+      // TODO: Handle errors.
+      console.error(err);
+    });
+  }
+
+  render() {
+
+    var authModalSignInCmp;
+
+    if (! this.state.user) {
+      authModalSignInCmp = (
+        <Button
+          bsStyle="success"
+          onClick={this.signIn.bind(this)}
+        >
+          Sign In to GitHub via OAuth.io
+        </Button>
+      );
+    }
+    else {
+      authModalSignInCmp = (
+        <div>
+          <div>
+            <a
+              href={this.state.user.htmlUrl}
+              target="_blank"
+            >
+              <img src={this.state.user.avatarUrl}
+                className="ghir-auth-user-avatar"
+              ></img>
+            </a>
+          </div>
+          <div>
+            <a
+              href={this.state.user.htmlUrl}
+              target="_blank"
+            >
+              @{this.state.user.login}
+            </a>
+          </div>
+          <div>
+            <Button
+              bsStyle="success"
+              onClick={this.onClickSignOut.bind(this)}
+            >
+              <i className="fa fa-sign-out"></i> Sign Out
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="ghir-route-auth">
+        <Modal show={true} onHide={this.closeAuthModal.bind(this)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Authentication</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+
+            {authModalSignInCmp}
+
+            <hr />
+
+            <p>Or provide an access token:</p>
+
+            <Input
+              type="text"
+              value={this.state.inputGitHubAccessToken}
+              onChange={this.onChangeInputGitHubAccessToken.bind(this)}
+            />
+
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              onClick={this.closeAuthModal.bind(this)}
+            >
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
+    );
+  }
+
+};
+
+
 export class IssueRoute extends React.Component {
 
   constructor(props) {
@@ -651,8 +730,16 @@ export class IssueRoute extends React.Component {
   }
 
   componentDidMount() {
-    this.unmounting = false;
+    this.setState({
+      unmounting: false
+    })
     this.showComments();
+  }
+
+  componentWillUnmount() {
+    this.setState({
+      unmounting: true
+    })
   }
 
   showComments() {
@@ -699,7 +786,8 @@ export class IssueRoute extends React.Component {
 
   closeIssueModal() {
     var {owner, repo} = this.props.params;
-    history.pushState(null, '/' + owner + '/' + repo);
+    var href = linker.github('/' + owner + '/' + repo);
+    history.pushState(null, href);
   }
 
   render() {
@@ -711,7 +799,7 @@ export class IssueRoute extends React.Component {
           <Modal.Header closeButton>
             <Modal.Title>
 
-              <Link to={'/' + owner + '/' + repo}>
+              <Link to={linker.github('/' + owner + '/' + repo)}>
                 {owner}/{repo}
               </Link>
               <a href={'https://github.com/' + owner + '/' + repo}
@@ -721,7 +809,7 @@ export class IssueRoute extends React.Component {
                 <i className="fa fa-github"></i>
               </a>
               &nbsp;
-              <Link to={'/' + owner + '/' + repo + '/' + number}>
+              <Link to={linker.github('/' + owner + '/' + repo + '/' + number)}>
                 #{number}
               </Link>
               <a href={'https://github.com/' + owner + '/' + repo
@@ -771,3 +859,4 @@ export class IssueRoute extends React.Component {
     );
   }
 };
+
