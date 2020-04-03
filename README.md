@@ -1,6 +1,6 @@
 # github-issue-rank
 
-GitHub issue ranking & voting. https://andrz.me/github-issue-rank
+GitHub issue ranking & voting. https://AndersDJohnson.github.io/github-issue-rank
 
 ## References
 
